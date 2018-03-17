@@ -52,3 +52,7 @@ The day after while refactoring and switching the code configuration from `comma
 
 After some searching, it was a bug in the 3rd party library and my code, that was not handling the "wrong password" error correctly. Which was not found in CI because the mock library had not this problem.
  
+
+## Special thanks
+
+For https://github.com/celery/py-amqp out of which I've extracted the type (de)serialization code
