@@ -40,6 +40,7 @@ def read_frame(data_in):
     if frame_type == _FRAME_METHOD:
         # Get the Method ID from the frame data
         method_id = struct.unpack_from('>I', payload)[0]
+        print(method_id)
         return Method(
             channel_number,
             frame_size,

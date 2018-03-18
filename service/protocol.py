@@ -8,6 +8,7 @@ from .sender import (
     send_connection_start,
     send_connection_tune,
     send_connection_ok,
+    send_channel_open_ok,
 )
 from .heartbeat import HeartBeat
 from .method import MethodIDs
@@ -23,6 +24,9 @@ class _ParserState(IntEnum):
     WAITING_CONNECTION_START_OK = 2
     WAITING_CONNECTION_TUNE_OK = 3
     WAITING_CONNECTION_OPEN = 4
+    WAITING_CHANNEL_OPEN = 5
+
+    WAITING_OTHER = 999
 
 
 class TrackerProtocol(asyncio.protocols.Protocol):
@@ -123,6 +127,22 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                     return
 
                 send_connection_ok(self.transport)
+                self._parser_state = _ParserState.WAITING_CHANNEL_OPEN
+                continue
+
+            if self._parser_state == _ParserState.WAITING_CHANNEL_OPEN:
+                if frame_value.method_id != MethodIDs.CHANNEL_OPEN:
+                    self.transport.close()
+                    return
+
+                open_is_ok = self._check_channel_open(frame_value)
+                if not open_is_ok:
+                    self.transport.close()
+                    return
+
+                send_channel_open_ok(self.transport, channel_id='42')
+                print("send_channel open ok")
+                self._parser_state = _ParserState.WAITING_OTHER
                 continue
 
     def _check_protocol_header(self):
@@ -148,4 +168,7 @@ class TrackerProtocol(asyncio.protocols.Protocol):
 
     def _check_open(self, method):
         # TODO: use callback to check user has access to vhost etc.
+        return True
+
+    def _check_channel_open(self, method):
         return True

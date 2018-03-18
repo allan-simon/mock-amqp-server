@@ -125,3 +125,35 @@ def send_connection_ok(transport):
 
     transport.write(arguments)
     transport.write(_FRAME_END)
+
+
+def send_channel_open_ok(transport, channel_id):
+
+    arguments = dumps(
+        format='S',
+        values=[
+            channel_id  # channel id
+        ]
+    )
+
+    transport.write(
+        bytearray(
+            [
+                1,  # method
+                0, 0,  # channel number 0
+            ]
+        )
+    )
+    # size of the frame
+    # class+method (4 bytes) + bytes len of arguments
+    transport.write(pack('>I', 4 + len(arguments) ))
+
+    transport.write(
+        bytearray([
+            0, 20,  # class channel (20)
+            0, 11,  # method open-ok (11)
+        ])
+    )
+
+    transport.write(arguments)
+    transport.write(_FRAME_END)
