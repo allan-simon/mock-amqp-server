@@ -1,13 +1,16 @@
 import traceback
 from typing import Callable, Any
 from enum import IntEnum
-from struct import pack
 import asyncio
-from collections import deque
 
-from .serialization import dumps
+from .frame import read_frame
+from .sender import (
+    send_connection_start,
+    send_connection_tune,
+)
+from .method import MethodIDs
 
-PROTOCOL_HEADER = [i for i in b'AMQP\x00\x00\x09\x01']
+PROTOCOL_HEADER = b'AMQP\x00\x00\x09\x01'
 CE_END_FRAME = b'\xce'
 
 
@@ -16,6 +19,8 @@ class _ParserState(IntEnum):
 
     WAITING_PROTOCOL_HEADER = 1
     WAITING_CONNECTION_START_OK = 2
+    WAITING_CONNECTION_TUNE_OK = 3
+    WAITING_CONNECTION_OPEN = 4
 
 
 class TrackerProtocol(asyncio.protocols.Protocol):
@@ -33,7 +38,7 @@ class TrackerProtocol(asyncio.protocols.Protocol):
         when the connection is lost.
         """
         self.transport = None  # type: asyncio.transports.Transport
-        self._buffer = deque()
+        self._buffer = b''
         self._parser_state = _ParserState.WAITING_PROTOCOL_HEADER
 
     def connection_made(self, transport):
@@ -41,9 +46,6 @@ class TrackerProtocol(asyncio.protocols.Protocol):
         self.transport = transport
 
     def connection_lost(self, exception):
-
-        if self.imei is not None:
-            self.on_connection_lost(self.imei)
 
         if exception is None:
             return
@@ -62,81 +64,76 @@ class TrackerProtocol(asyncio.protocols.Protocol):
         State transitions in normal case:
 
         """
-        self._buffer.extend(data)
-        print(data)
+        self._buffer += data
+
         if self._parser_state == _ParserState.WAITING_PROTOCOL_HEADER:
-            self._check_protocol_header()
+            protocol_ok = self._check_protocol_header()
+            if not protocol_ok:
+                return
+
+            send_connection_start(self.transport)
+            self._parser_state = _ParserState.WAITING_CONNECTION_START_OK
             return
 
+        print("data")
+        while len(self._buffer) > 0:
+            print(self._buffer)
+            frame_value = read_frame(self._buffer)
+            if not frame_value:
+                print("no frame :(")
+                # no more complete frame available
+                # => wait for next data
+                return
+            print("frame")
+            self._buffer = self._buffer[frame_value.size:]
+
+            if self._parser_state == _ParserState.WAITING_CONNECTION_START_OK:
+                correct_credentials = self._check_start_ok(frame_value)
+
+                if not correct_credentials:
+                    # TODO: we're supposed to send a connection.close method
+                    # https://www.rabbitmq.com/auth-notification.html
+                    self.transport.close()
+                    return
+
+                send_connection_tune(self.transport)
+                self._parser_state = _ParserState.WAITING_CONNECTION_TUNE_OK
+                return
+
+            if self._parser_state == _ParserState.WAITING_CONNECTION_TUNE_OK:
+                if frame_value.method_id != MethodIDs.TUNE_OK:
+                    self.transport.close()
+                    return
+                self._parser_state = _ParserState.WAITING_CONNECTION_OPEN
+                return
+
+            if self._parser_state == _ParserState.WAITING_CONNECTION_OPEN:
+                if frame_value.method_id != MethodIDs.OPEN:
+                    self.transport.close()
+                    return
+                self._check_open(frame)
+                return
     def _check_protocol_header(self):
         if len(self._buffer) < len(PROTOCOL_HEADER):
             # underflow
-            return
-        header = [
-            self._buffer.popleft()
-            for _i in range(len(PROTOCOL_HEADER))
-        ]
-        if header != PROTOCOL_HEADER:
+            return False
+
+        if self._buffer != PROTOCOL_HEADER:
             self.transport.close()
-            return
-        self._send_connection_start()
-        self._parser_state = _ParserState.WAITING_CONNECTION_START_OK
+            self._buffer = b''
+            return False
+
+        self._buffer = b''
+        return True
         print("sent")
 
-    def _send_connection_start(self):
+    def _check_start_ok(self, method):
+        if method.properties['mechanism'] != "PLAIN":
+            return False
+        # TODO: use callback to check username/password correctness
+        _ , username, password = method.properties['response'].split('\x00', 3)
+        return True;
 
-        # dumped from the peer-properties sent by a RabbitMQ 3.7.4
-        # server
-        peer_properties = {
-            'capabilities': {
-                'authentication_failure_close': True,
-                'consumer_priorities': True,
-                'exchange_exchange_bindings': True,
-                'direct_reply_to': True,
-                'per_consumer_qos': True,
-                'basic.nack': True,
-                'publisher_confirms': True,
-                'consumer_cancel_notify': True,
-                'connection.blocked': True
-            },
-            'information': 'Licensed under the MPL.  See http://www.rabbitmq.com/',
-            'cluster_name': 'rabbit@60b584cb4c1b',
-            'product': 'RabbitMQ', 'version': '3.7.4',
-            'copyright': 'Copyright (C) 2007-2018 Pivotal Software, Inc.',
-            'platform': 'Erlang/OTP 20.2.4'
-        }
-        mechanisms = 'PLAIN AMQPLAIN'
-        locales = 'en_US'
-
-        arguments = dumps(
-            format='ooFSS',
-            values=[
-                0,
-                9,
-                peer_properties,
-                mechanisms,
-                locales,
-            ]
-        )
-
-        self.transport.write(
-            bytearray(
-                [
-                    1,  # method
-                    0, 0,  # channel number 0
-                ]
-            )
-        )
-        # size of the frame
-        # class+method (4 bytes) + bytes len of arguments
-        self.transport.write(pack('>I', 4 + len(arguments) ))
-
-        self.transport.write(
-            bytearray([
-                0, 10,  # class connection (10)
-                0, 10,  # method start (10)
-            ])
-        )
-
-        self.transport.write(arguments)
-        self.transport.write(CE_END_FRAME)
+    def _check_open(self, method):
+        # TODO: use callback to check user has access to vhost etc.
+        return True
