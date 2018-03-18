@@ -8,6 +8,7 @@ from .sender import (
     send_connection_start,
     send_connection_tune,
 )
+from .heartbeat import HeartBeat
 from .method import MethodIDs
 
 PROTOCOL_HEADER = b'AMQP\x00\x00\x09\x01'
@@ -77,7 +78,6 @@ class TrackerProtocol(asyncio.protocols.Protocol):
 
         print("data")
         while len(self._buffer) > 0:
-            print(self._buffer)
             frame_value = read_frame(self._buffer)
             if not frame_value:
                 print("no frame :(")
@@ -85,7 +85,11 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 # => wait for next data
                 return
             print("frame")
+            print(frame_value)
             self._buffer = self._buffer[frame_value.size:]
+
+            if isinstance(frame_value, HeartBeat):
+                continue
 
             if self._parser_state == _ParserState.WAITING_CONNECTION_START_OK:
                 correct_credentials = self._check_start_ok(frame_value)
@@ -105,14 +109,15 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                     self.transport.close()
                     return
                 self._parser_state = _ParserState.WAITING_CONNECTION_OPEN
-                return
+                continue
 
             if self._parser_state == _ParserState.WAITING_CONNECTION_OPEN:
                 if frame_value.method_id != MethodIDs.OPEN:
                     self.transport.close()
                     return
-                self._check_open(frame)
-                return
+                self._check_open(frame_value)
+                continue
+
     def _check_protocol_header(self):
         if len(self._buffer) < len(PROTOCOL_HEADER):
             # underflow

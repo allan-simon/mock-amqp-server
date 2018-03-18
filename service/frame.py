@@ -1,5 +1,6 @@
 import struct
 from .method import Method
+from .heartbeat import HeartBeat
 
 _FRAME_HEADER_SIZE = 7
 _FRAME_END_SIZE =  1
@@ -7,6 +8,7 @@ _FRAME_END_SIZE =  1
 _FRAME_END = b'\xce'
 
 _FRAME_METHOD = 1
+_FRAME_HEARTBEAT = 8
 
 
 def read_frame(data_in):
@@ -44,6 +46,8 @@ def read_frame(data_in):
             method_id,
             payload,
         )
+    if frame_type == _FRAME_HEARTBEAT:
+        return HeartBeat(frame_size)
 
     print("frame type:", frame_type)
 
