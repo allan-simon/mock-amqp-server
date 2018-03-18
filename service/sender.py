@@ -94,3 +94,34 @@ def send_connection_tune(transport):
 
     transport.write(arguments)
     transport.write(_FRAME_END)
+
+def send_connection_ok(transport):
+
+    arguments = dumps(
+        format='s',
+        values=[
+            '' # known host
+        ]
+    )
+
+    transport.write(
+        bytearray(
+            [
+                1,  # method
+                0, 0,  # channel number 0
+            ]
+        )
+    )
+    # size of the frame
+    # class+method (4 bytes) + bytes len of arguments
+    transport.write(pack('>I', 4 + len(arguments) ))
+
+    transport.write(
+        bytearray([
+            0, 10,  # class connection (10)
+            0, 41,  # method open-ok (41)
+        ])
+    )
+
+    transport.write(arguments)
+    transport.write(_FRAME_END)

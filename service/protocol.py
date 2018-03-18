@@ -7,6 +7,7 @@ from .frame import read_frame
 from .sender import (
     send_connection_start,
     send_connection_tune,
+    send_connection_ok,
 )
 from .heartbeat import HeartBeat
 from .method import MethodIDs
@@ -115,7 +116,13 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 if frame_value.method_id != MethodIDs.OPEN:
                     self.transport.close()
                     return
-                self._check_open(frame_value)
+
+                open_is_ok = self._check_open(frame_value)
+                if not open_is_ok:
+                    self.transport.close()
+                    return
+
+                send_connection_ok(self.transport)
                 continue
 
     def _check_protocol_header(self):
