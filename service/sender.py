@@ -127,7 +127,11 @@ def send_connection_ok(transport):
     transport.write(_FRAME_END)
 
 
-def send_channel_open_ok(transport, channel_id):
+def send_channel_open_ok(
+    transport,
+    channel_number,
+    channel_id,
+):
 
     arguments = dumps(
         format='S',
@@ -140,7 +144,8 @@ def send_channel_open_ok(transport, channel_id):
         bytearray(
             [
                 1,  # method
-                0, 0,  # channel number 0
+                # channel number, same as the one received
+                0, channel_number,
             ]
         )
     )

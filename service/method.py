@@ -25,6 +25,7 @@ class Method():
         decode_method = _ID_TO_METHOD[method_id]
         self.properties = decode_method(payload)
 
+
 def _decode_start_ok(payload):
     values, _ = loads(
         'FsSs',
@@ -65,6 +66,7 @@ def _decode_open(payload):
         'capabilities': values[1],
         'insist': values[2],
     }
+
 
 def _decode_channel_open(payload):
     values, _ = loads(
