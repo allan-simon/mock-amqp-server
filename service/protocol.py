@@ -9,6 +9,7 @@ from .sender import (
     send_connection_tune,
     send_connection_ok,
     send_channel_open_ok,
+    send_channel_close_ok,
     send_exchange_declare_ok,
 )
 from .heartbeat import HeartBeat
@@ -202,7 +203,15 @@ class TrackerProtocol(asyncio.protocols.Protocol):
             channel['state'] = _ChannelState.OPENED
             return
 
+        if frame_value.method_id == MethodIDs.CHANNEL_CLOSE:
+            del self._channels[channel_number]
+            send_channel_close_ok(self.transport, channel_number)
+            print("closed")
+            self.transport.close()
+            return
+
         if channel['state'] == _ChannelState.OPENED:
+
             if frame_value.method_id == MethodIDs.EXCHANGE_DECLARE:
                 # TODO add exchange declare callback
                 send_exchange_declare_ok(
@@ -215,5 +224,8 @@ class TrackerProtocol(asyncio.protocols.Protocol):
             if frame_value.method_id == MethodIDs.BASIC_PUBLISH:
                 print("message published started")
                 channel['state'] = _ChannelState.WAITING_HEADER
+                # TODO: we should store the class id
+                # so that we could check that the header method id
+                # are the same
                 return
             return

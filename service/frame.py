@@ -1,5 +1,7 @@
 import struct
 from .method import Method
+from .method import Header
+from .method import Body
 from .heartbeat import HeartBeat
 
 _FRAME_HEADER_SIZE = 7
@@ -9,6 +11,7 @@ _FRAME_END = b'\xce'
 
 _FRAME_METHOD = 1
 _FRAME_HEADER = 2
+_FRAME_BODY = 3
 _FRAME_HEARTBEAT = 8
 
 
@@ -50,6 +53,29 @@ def read_frame(data_in):
         )
     if frame_type == _FRAME_HEARTBEAT:
         return HeartBeat(frame_size)
+
+    if frame_type == _FRAME_HEADER:
+        print(len(data_in[0:11]))
+        (
+            class_id,
+            _weight,  # unused
+            body_size,
+        ) = struct.unpack('>HHQ', data_in[0:12])
+        print(hex(class_id))
+        return Header(
+            channel_number,
+            frame_size,
+            class_id,
+            body_size,
+            payload
+        )
+
+    if frame_type == _FRAME_BODY:
+        return Body(
+            channel_number,
+            frame_size,
+            payload
+        )
 
     print("frame type:", frame_type)
 

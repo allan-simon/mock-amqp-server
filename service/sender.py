@@ -163,6 +163,33 @@ def send_channel_open_ok(
     transport.write(arguments)
     transport.write(_FRAME_END)
 
+def send_channel_close_ok(
+    transport,
+    channel_number,
+):
+
+    transport.write(
+        bytearray(
+            [
+                1,  # method
+                # channel number, same as the one received
+                0, channel_number,
+            ]
+        )
+    )
+    # size of the frame
+    # class+method (4 bytes)
+    transport.write(pack('>I', 4))
+
+    transport.write(
+        bytearray([
+            0, 20,  # class channel (20)
+            0, 41,  # method close-ok (41)
+        ])
+    )
+
+    transport.write(_FRAME_END)
+
 def send_exchange_declare_ok(
     transport,
     channel_number,

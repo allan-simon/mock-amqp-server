@@ -8,6 +8,7 @@ class MethodIDs(IntEnum):
     OPEN = 0x000A0028
 
     CHANNEL_OPEN = 0x0014000A
+    CHANNEL_CLOSE = 0x00140028
 
     BASIC_QOS = 0x003C000A
     BASIC_PUBLISH = 0x003C0028
@@ -31,6 +32,34 @@ class Method():
         print(hex(method_id))
         decode_method = _ID_TO_METHOD[method_id]
         self.properties = decode_method(payload)
+
+class Header():
+    def __init__(
+        self,
+        channel_number,
+        size,
+        class_id,
+        body_size,
+        payload,
+    ):
+        self.method_id = None
+        self.channel_number = channel_number
+        self.size = size
+        self.class_id = class_id
+        self.body_size = body_size
+
+
+class Body():
+    def __init__(
+        self,
+        channel_number,
+        size,
+        payload,
+    ):
+        self.method_id = None
+        self.channel_number = channel_number
+        self.size = size
+        self.content = payload
 
 
 def _decode_start_ok(payload):
@@ -85,6 +114,19 @@ def _decode_channel_open(payload):
         'reserved-1': values[0],
     }
 
+def _decode_channel_close(payload):
+    values, _ = loads(
+        'BsBB',
+        payload,
+        offset=4,
+    )
+    return {
+        'reply-code': values[0],
+        'reply-text': values[1],
+        'class-id': values[2],
+        'method-id': values[3],
+    }
+
 
 def _decode_basic_qos(payload):
 
@@ -126,12 +168,14 @@ def _decode_basic_publish(payload):
         'immediate': values[4],
     }
 
+
 _ID_TO_METHOD = {
     0x000A000B: _decode_start_ok,
     0x000A001F: _decode_tune_ok,
     0x000A0028: _decode_open,
 
     0x0014000A: _decode_channel_open,
+    0x00140028: _decode_channel_close,
 
     0x003C000A: _decode_basic_qos,
     0x003C0028: _decode_basic_publish,
