@@ -9,8 +9,14 @@ class MethodIDs(IntEnum):
 
     CHANNEL_OPEN = 0x0014000A
 
+    BASIC_QOS = 0x003C000A
+    BASIC_PUBLISH = 0x003C0028
+
+    EXCHANGE_DECLARE = 0x0028000A
+
 
 class Method():
+
     def __init__(
         self,
         channel_number,
@@ -22,6 +28,7 @@ class Method():
         self.size = size
         self.method_id = method_id
 
+        print(hex(method_id))
         decode_method = _ID_TO_METHOD[method_id]
         self.properties = decode_method(payload)
 
@@ -77,12 +84,57 @@ def _decode_channel_open(payload):
     return {
         'reserved-1': values[0],
     }
-    return
 
-_ID_TO_METHOD =  {
+
+def _decode_basic_qos(payload):
+
+    return {
+
+    }
+
+def _decode_exchange_declare(payload):
+
+    values, _ = loads(
+        'BsBbbbbbF',
+        payload,
+        offset=4,
+    )
+    return {
+        'reserved-1': values[0],
+        'exchange-name': values[1],
+        'type': values[2],
+        'passive': values[3],
+        'durable': values[4],
+        'auto-delete': values[5],
+        'internal': values[6],
+        'no-wait': values[6],
+        'arguments': values[7],
+    }
+
+def _decode_basic_publish(payload):
+
+    values, _ = loads(
+        'Bssbb',
+        payload,
+        offset=4,
+    )
+    return {
+        'reserved-1': values[0],
+        'exchange-name': values[1],
+        'routing-key': values[2],
+        'mandatory': values[3],
+        'immediate': values[4],
+    }
+
+_ID_TO_METHOD = {
     0x000A000B: _decode_start_ok,
     0x000A001F: _decode_tune_ok,
     0x000A0028: _decode_open,
 
     0x0014000A: _decode_channel_open,
+
+    0x003C000A: _decode_basic_qos,
+    0x003C0028: _decode_basic_publish,
+
+    0x0028000A: _decode_exchange_declare,
 }

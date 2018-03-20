@@ -9,6 +9,7 @@ from .sender import (
     send_connection_tune,
     send_connection_ok,
     send_channel_open_ok,
+    send_exchange_declare_ok,
 )
 from .heartbeat import HeartBeat
 from .method import MethodIDs
@@ -30,6 +31,8 @@ class _ConnectionState(IntEnum):
 
 class _ChannelState(IntEnum):
     WAITING_OPEN = 1
+    OPENED = 2
+    WAITING_HEADER = 3
 
 
 class TrackerProtocol(asyncio.protocols.Protocol):
@@ -136,7 +139,7 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                     return
 
                 send_connection_ok(self.transport)
-                self._parser_state = _ConnectionState.CONNECTION_OPENED
+                self._parser_state = _ConnectionState.OPENED
                 continue
 
 
@@ -178,6 +181,7 @@ class TrackerProtocol(asyncio.protocols.Protocol):
 
     def _treat_channel_frame(self, frame_value):
         channel = self._channels[frame_value.channel_number]
+        channel_number = frame_value.channel_number
 
         if channel['state'] == _ChannelState.WAITING_OPEN:
             if frame_value.method_id != MethodIDs.CHANNEL_OPEN:
@@ -195,5 +199,21 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 channel_number=channel['number'],
             )
             print("send_channel open ok")
-            self._parser_state = _ConnectionState.WAITING_OTHER
+            channel['state'] = _ChannelState.OPENED
+            return
+
+        if channel['state'] == _ChannelState.OPENED:
+            if frame_value.method_id == MethodIDs.EXCHANGE_DECLARE:
+                # TODO add exchange declare callback
+                send_exchange_declare_ok(
+                    self.transport,
+                    channel_number,
+                )
+                print("exchange ok")
+                return
+
+            if frame_value.method_id == MethodIDs.BASIC_PUBLISH:
+                print("message published started")
+                channel['state'] = _ChannelState.WAITING_HEADER
+                return
             return
