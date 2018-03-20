@@ -14,6 +14,7 @@ from .sender import (
 )
 from .heartbeat import HeartBeat
 from .method import MethodIDs
+from .message import Message
 
 PROTOCOL_HEADER = b'AMQP\x00\x00\x09\x01'
 CE_END_FRAME = b'\xce'
@@ -34,6 +35,7 @@ class _ChannelState(IntEnum):
     WAITING_OPEN = 1
     OPENED = 2
     WAITING_HEADER = 3
+    WAITING_BODY = 4
 
 
 class TrackerProtocol(asyncio.protocols.Protocol):
@@ -229,3 +231,21 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 # are the same
                 return
             return
+
+        if channel['state'] == _ChannelState.WAITING_HEADER:
+            if not frame_value.is_header:
+                return
+
+            channel['on_going_message'] = Message(header=frame_value)
+            channel['state'] = _ChannelState.WAITING_BODY
+
+        if channel['state'] == _ChannelState.WAITING_BODY:
+            if not frame_value.is_body:
+                return
+
+            message = channel['on_going_message']
+            message.add_content(frame_value.content)
+            if not message.is_complete():
+                return
+
+            channel['state'] = _ChannelState.OPENED

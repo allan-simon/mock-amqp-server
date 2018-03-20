@@ -1,5 +1,7 @@
 from enum import IntEnum
+from struct import unpack
 from .serialization import loads
+
 
 class MethodIDs(IntEnum):
     START_OK = 0x000A000B
@@ -25,6 +27,8 @@ class Method():
         method_id,
         payload,
     ):
+        self.is_header = False
+        self.is_body = False
         self.channel_number = channel_number
         self.size = size
         self.method_id = method_id
@@ -33,20 +37,58 @@ class Method():
         decode_method = _ID_TO_METHOD[method_id]
         self.properties = decode_method(payload)
 
+
 class Header():
+
+    PROPERTIES = [
+        ('content_type', 's', 1 << 15),
+        ('content_encoding', 's', 1 << 14),
+        ('application_headers', 'F', 1 << 13),
+        ('delivery_mode', 'B', 1 << 12),
+        ('priority', 'B', 1 << 11),
+        ('correlation_id', 's', 1 << 10),
+        ('reply_to', 's', 1 << 9),
+        ('expiration', 's', 1 << 8),
+        ('message_id', 's', 1 << 7),
+        ('timestamp', 'l', 1 << 6),
+        ('type', 's', 1 << 5),
+        ('user_id', 's', 1 << 4),
+        ('app_id', 's', 1 << 3),
+        ('cluster_id', 's', 1 << 2)
+    ]
+
     def __init__(
         self,
         channel_number,
         size,
         class_id,
         body_size,
+        property_flags,
         payload,
     ):
+        self.is_header = True
+        self.is_body = False
         self.method_id = None
         self.channel_number = channel_number
         self.size = size
         self.class_id = class_id
         self.body_size = body_size
+
+        # we assume there's no extra flags
+        parse_string = ''
+        keys = []
+        for key, parse_type, mask in self.PROPERTIES:
+            if property_flags & mask:
+                parse_string += parse_type
+                keys.append(key)
+
+        values, _ = loads(
+            parse_string,
+            payload,
+            offset=14,
+        )
+        self.properties = dict(zip(keys, values))
+        print(self.properties)
 
 
 class Body():
@@ -56,6 +98,8 @@ class Body():
         size,
         payload,
     ):
+        self.is_header = False
+        self.is_body = True
         self.method_id = None
         self.channel_number = channel_number
         self.size = size

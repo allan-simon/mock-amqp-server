@@ -60,13 +60,15 @@ def read_frame(data_in):
             class_id,
             _weight,  # unused
             body_size,
-        ) = struct.unpack('>HHQ', data_in[0:12])
+            property_flags,
+        ) = struct.unpack('>HHQH', data_in[0:14])
         print(hex(class_id))
         return Header(
             channel_number,
             frame_size,
             class_id,
             body_size,
+            property_flags,
             payload
         )
 
