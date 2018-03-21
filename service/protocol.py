@@ -15,6 +15,7 @@ from .sender import (
 from .heartbeat import HeartBeat
 from .method import MethodIDs
 from .message import Message
+from .serialization import loads
 
 PROTOCOL_HEADER = b'AMQP\x00\x00\x09\x01'
 CE_END_FRAME = b'\xce'
@@ -160,10 +161,19 @@ class TrackerProtocol(asyncio.protocols.Protocol):
         print("sent")
 
     def _check_start_ok(self, method):
-        if method.properties['mechanism'] != "PLAIN":
+        if method.properties['mechanism'] not in ["PLAIN", "AMQPLAIN"]:
             return False
+
         # TODO: use callback to check username/password correctness
-        _ , username, password = method.properties['response'].split('\x00', 3)
+        if method.properties['mechanism'] == "PLAIN":
+            _ , username, password = method.properties['response'].split('\x00', 3)
+
+        if method.properties['mechanism'] == "AMQPLAIN":
+            _, _, username, _, _, password = loads(
+                'soSsoS',
+                method.properties['response'].encode('utf-8')
+            )[0]  # [0] decoded values, [1] => length decoded
+
         return True;
 
     def _check_open(self, method):

@@ -28,7 +28,7 @@ def _main():
     coroutine = loop.create_server(
         lambda: TrackerProtocol(
         ),
-        '127.0.0.1',
+        '0.0.0.0',
         '5672',
     )
     server = loop.run_until_complete(coroutine)
