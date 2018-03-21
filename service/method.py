@@ -33,7 +33,6 @@ class Method():
         self.size = size
         self.method_id = method_id
 
-        print(hex(method_id))
         decode_method = _ID_TO_METHOD[method_id]
         self.properties = decode_method(payload)
 
@@ -50,7 +49,7 @@ class Header():
         ('reply_to', 's', 1 << 9),
         ('expiration', 's', 1 << 8),
         ('message_id', 's', 1 << 7),
-        ('timestamp', 'l', 1 << 6),
+        ('timestamp', 'L', 1 << 6),
         ('type', 's', 1 << 5),
         ('user_id', 's', 1 << 4),
         ('app_id', 's', 1 << 3),
@@ -88,7 +87,6 @@ class Header():
             offset=14,
         )
         self.properties = dict(zip(keys, values))
-        print(self.properties)
 
 
 class Body():

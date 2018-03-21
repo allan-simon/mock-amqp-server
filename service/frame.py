@@ -55,13 +55,12 @@ def read_frame(data_in):
         return HeartBeat(frame_size)
 
     if frame_type == _FRAME_HEADER:
-        print(len(data_in[0:11]))
         (
             class_id,
             _weight,  # unused
             body_size,
             property_flags,
-        ) = struct.unpack('>HHQH', data_in[0:14])
+        ) = struct.unpack('>HHQH', payload[0:14])
         print(hex(class_id))
         return Header(
             channel_number,

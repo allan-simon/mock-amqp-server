@@ -91,7 +91,6 @@ class TrackerProtocol(asyncio.protocols.Protocol):
             self._parser_state = _ConnectionState.WAITING_START_OK
             return
 
-        print("data")
         while len(self._buffer) > 0:
             frame_value = read_frame(self._buffer)
             if not frame_value:
