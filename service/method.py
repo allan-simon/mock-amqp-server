@@ -17,6 +17,7 @@ class MethodIDs(IntEnum):
 
     EXCHANGE_DECLARE = 0x0028000A
 
+    QUEUE_DECLARE = 0x0032000A
 
 class Method():
 
@@ -33,7 +34,9 @@ class Method():
         self.size = size
         self.method_id = method_id
 
+        print(hex(method_id))
         decode_method = _ID_TO_METHOD[method_id]
+        print(decode_method.__name__)
         self.properties = decode_method(payload)
 
 
@@ -179,7 +182,7 @@ def _decode_basic_qos(payload):
 def _decode_exchange_declare(payload):
 
     values, _ = loads(
-        'BsBbbbbbF',
+        'BssbbbbbF',
         payload,
         offset=4,
     )
@@ -210,6 +213,25 @@ def _decode_basic_publish(payload):
         'immediate': values[4],
     }
 
+def _decode_queue_declare(payload):
+
+    print(payload)
+    values, _ = loads(
+        'BsbbbbbF',
+        payload,
+        offset=4,
+    )
+    return {
+        'reserved-1': values[0],
+        'queue-name': values[1],
+        'passive': values[2],
+        'durable': values[3],
+        'exclusive': values[4],
+        'auto-delete': values[5],
+        'no-wait': values[6],
+        'arguments': values[7],
+    }
+
 
 _ID_TO_METHOD = {
     0x000A000B: _decode_start_ok,
@@ -223,4 +245,5 @@ _ID_TO_METHOD = {
     0x003C0028: _decode_basic_publish,
 
     0x0028000A: _decode_exchange_declare,
+    MethodIDs.QUEUE_DECLARE: _decode_queue_declare,
 }
