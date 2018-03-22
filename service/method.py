@@ -18,6 +18,8 @@ class MethodIDs(IntEnum):
     EXCHANGE_DECLARE = 0x0028000A
 
     QUEUE_DECLARE = 0x0032000A
+    QUEUE_BIND = 0x00320014
+
 
 class Method():
 
@@ -232,6 +234,23 @@ def _decode_queue_declare(payload):
         'arguments': values[7],
     }
 
+def _decode_queue_bind(payload):
+
+    print(payload)
+    values, _ = loads(
+        'BsssbF',
+        payload,
+        offset=4,
+    )
+    return {
+        'reserved-1': values[0],
+        'queue-name': values[1],
+        'exchange-name': values[2],
+        'routing-key': values[3],
+        'no-wait': values[4],
+        'arguments': values[5],
+    }
+
 
 _ID_TO_METHOD = {
     0x000A000B: _decode_start_ok,
@@ -246,4 +265,5 @@ _ID_TO_METHOD = {
 
     0x0028000A: _decode_exchange_declare,
     MethodIDs.QUEUE_DECLARE: _decode_queue_declare,
+    MethodIDs.QUEUE_BIND: _decode_queue_bind,
 }

@@ -11,6 +11,8 @@ from .sender import (
     send_channel_open_ok,
     send_channel_close_ok,
     send_exchange_declare_ok,
+    send_queue_declare_ok,
+    send_queue_bind_ok,
 )
 from .heartbeat import HeartBeat
 from .method import MethodIDs
@@ -230,6 +232,28 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                     channel_number,
                 )
                 print("exchange ok")
+                return
+
+            if frame_value.method_id == MethodIDs.QUEUE_DECLARE:
+                # TODO add queue declare callback
+                # and get message_count / consumer_count
+                send_queue_declare_ok(
+                    self.transport,
+                    channel_number,
+                    frame_value.properties['queue-name'],
+                    message_count=0,
+                    consumer_count=0,
+                )
+                print("queue ok")
+                return
+
+            if frame_value.method_id == MethodIDs.QUEUE_BIND:
+                # TODO add queue bind callback
+                send_queue_bind_ok(
+                    self.transport,
+                    channel_number,
+                )
+                print("queue bind")
                 return
 
             if frame_value.method_id == MethodIDs.BASIC_PUBLISH:

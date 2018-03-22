@@ -216,3 +216,72 @@ def send_exchange_declare_ok(
     )
 
     transport.write(_FRAME_END)
+
+def send_queue_declare_ok(
+    transport,
+    channel_number,
+    queue_name,
+    message_count,
+    consumer_count,
+):
+
+    arguments = dumps(
+        format='sll',
+        values=[
+            queue_name,
+            message_count,
+            consumer_count,
+        ]
+    )
+
+    transport.write(
+        bytearray(
+            [
+                1,  # method
+                # channel number, same as the one received
+                0, channel_number,
+            ]
+        )
+    )
+
+    # size of the frame
+    # class+method (4 bytes) + bytes len of arguments
+    transport.write(pack('>I', 4 + len(arguments) ))
+
+    transport.write(
+        bytearray([
+            0, 50,  # class queue (50)
+            0, 11,  # method declare-ok (11)
+        ])
+    )
+
+    transport.write(arguments)
+
+    transport.write(_FRAME_END)
+
+def send_queue_bind_ok(
+    transport,
+    channel_number,
+):
+
+    transport.write(
+        bytearray(
+            [
+                1,  # method
+                # channel number, same as the one received
+                0, channel_number,
+            ]
+        )
+    )
+    # size of the frame
+    # class+method (4 bytes)
+    transport.write(pack('>I', 4))
+
+    transport.write(
+        bytearray([
+            0, 50,  # class queue (50)
+            0, 21,  # method bind-ok (21)
+        ])
+    )
+
+    transport.write(_FRAME_END)
