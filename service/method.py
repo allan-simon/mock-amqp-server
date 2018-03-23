@@ -14,6 +14,7 @@ class MethodIDs(IntEnum):
 
     BASIC_QOS = 0x003C000A
     BASIC_PUBLISH = 0x003C0028
+    BASIC_CONSUME = 0x003C0014
 
     EXCHANGE_DECLARE = 0x0028000A
 
@@ -177,8 +178,16 @@ def _decode_channel_close(payload):
 
 def _decode_basic_qos(payload):
 
-    return {
+    values, _ = loads(
+        'lBb',
+        payload,
+        offset=4,
+    )
 
+    return {
+        'prefetch-size': values[0],
+        'prefetch-count': values[1],
+        'global': values[2],
     }
 
 def _decode_exchange_declare(payload):
@@ -213,6 +222,24 @@ def _decode_basic_publish(payload):
         'routing-key': values[2],
         'mandatory': values[3],
         'immediate': values[4],
+    }
+
+def _decode_basic_consume(payload):
+
+    values, _ = loads(
+        'BssbbbbF',
+        payload,
+        offset=4,
+    )
+    return {
+        'reserved-1': values[0],
+        'queue-name': values[1],
+        'consumer-tag': values[2],
+        'no-local': values[3],
+        'no-ack': values[4],
+        'exclusive': values[5],
+        'no-wait': values[6],
+        'arguments': values[7],
     }
 
 def _decode_queue_declare(payload):
@@ -262,6 +289,7 @@ _ID_TO_METHOD = {
 
     0x003C000A: _decode_basic_qos,
     0x003C0028: _decode_basic_publish,
+    MethodIDs.BASIC_CONSUME: _decode_basic_consume,
 
     0x0028000A: _decode_exchange_declare,
     MethodIDs.QUEUE_DECLARE: _decode_queue_declare,

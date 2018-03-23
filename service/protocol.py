@@ -8,11 +8,14 @@ from .sender import (
     send_connection_start,
     send_connection_tune,
     send_connection_ok,
+    send_heartbeat,
     send_channel_open_ok,
     send_channel_close_ok,
     send_exchange_declare_ok,
     send_queue_declare_ok,
     send_queue_bind_ok,
+    send_basic_qos_ok,
+    send_basic_consume_ok,
 )
 from .heartbeat import HeartBeat
 from .method import MethodIDs
@@ -106,6 +109,8 @@ class TrackerProtocol(asyncio.protocols.Protocol):
             self._buffer = self._buffer[frame_value.size:]
 
             if isinstance(frame_value, HeartBeat):
+                send_heartbeat(self.transport)
+                print("send hearbeat")
                 continue
 
             if frame_value.channel_number != 0:
@@ -256,6 +261,15 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 print("queue bind")
                 return
 
+            if frame_value.method_id == MethodIDs.BASIC_QOS:
+                # TODO add basic qos callback
+                send_basic_qos_ok(
+                    self.transport,
+                    channel_number,
+                )
+                print("basic qos")
+                return
+
             if frame_value.method_id == MethodIDs.BASIC_PUBLISH:
                 print("message published started")
                 channel['state'] = _ChannelState.WAITING_HEADER
@@ -263,6 +277,18 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 # so that we could check that the header method id
                 # are the same
                 return
+
+            if frame_value.method_id == MethodIDs.BASIC_CONSUME:
+
+                # TODO add basic qos callback
+                send_basic_consume_ok(
+                    self.transport,
+                    channel_number,
+                    frame_value.properties['consumer-tag']
+                )
+                print("basic consume")
+                return
+
             return
 
         if channel['state'] == _ChannelState.WAITING_HEADER:

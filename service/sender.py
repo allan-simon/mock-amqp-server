@@ -4,6 +4,21 @@ from .serialization import dumps
 
 _FRAME_END = b'\xce'
 
+def send_heartbeat(transport):
+
+    transport.write(
+        bytearray(
+            [
+                8,  # heartbeat
+                # channel number, must be 0 for heartbeat
+                0, 0,
+            ]
+        )
+    )
+    # size of the frame (0)
+    transport.write(pack('>I', 0 ))
+    transport.write(_FRAME_END)
+
 def send_connection_start(transport):
 
     # dumped from the peer-properties sent by a RabbitMQ 3.7.4
@@ -283,5 +298,71 @@ def send_queue_bind_ok(
             0, 21,  # method bind-ok (21)
         ])
     )
+
+    transport.write(_FRAME_END)
+
+def send_basic_qos_ok(
+    transport,
+    channel_number,
+):
+
+    transport.write(
+        bytearray(
+            [
+                1,  # method
+                # channel number, same as the one received
+                0, channel_number,
+            ]
+        )
+    )
+    # size of the frame
+    # class+method (4 bytes)
+    transport.write(pack('>I', 4))
+
+    transport.write(
+        bytearray([
+            0, 60,  # class basic (60)
+            0, 11,  # method qos-ok (11)
+        ])
+    )
+
+    transport.write(_FRAME_END)
+
+def send_basic_consume_ok(
+    transport,
+    channel_number,
+    consumer_tag,
+):
+
+    arguments = dumps(
+        format='s',
+        values=[
+            consumer_tag,
+        ]
+    )
+
+    transport.write(
+        bytearray(
+            [
+                1,  # method
+                # channel number, same as the one received
+                0, channel_number,
+            ]
+        )
+    )
+
+    # size of the frame
+    # class+method (4 bytes) + bytes len of arguments
+    transport.write(pack('>I', 4 + len(arguments) ))
+
+
+    transport.write(
+        bytearray([
+            0, 60,  # class basic (60)
+            0, 21,  # method consume-ok (21)
+        ])
+    )
+
+    transport.write(arguments)
 
     transport.write(_FRAME_END)
