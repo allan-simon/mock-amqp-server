@@ -49,19 +49,16 @@ class TrackerProtocol(asyncio.protocols.Protocol):
 
     def __init__(
         self,
+        global_state,
     ) -> None:
         """Create a new instance.
-
-        And set the external callback that will be responsible
-        to treat the message. (put it into a Queue for example)
-        As well as the callback used to associate an IMEI to a connection
-        so that we can send back message to the trackers, and the callback
-        when the connection is lost.
         """
         self.transport = None  # type: asyncio.transports.Transport
+        self._global_state = global_state
+
         self._buffer = b''
         self._parser_state = _ConnectionState.WAITING_PROTOCOL_HEADER
-        self._channels = { }
+        self._channels = {}
 
     def connection_made(self, transport):
         """Handle new connection """
@@ -181,7 +178,12 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 method.properties['response'].encode('utf-8')
             )[0]  # [0] decoded values, [1] => length decoded
 
-        return True;
+        accepted = self._global_state.check_credentials(
+            username,
+            password
+        );
+
+        return accepted;
 
     def _check_open(self, method):
         # TODO: use callback to check user has access to vhost etc.
@@ -273,9 +275,8 @@ class TrackerProtocol(asyncio.protocols.Protocol):
             if frame_value.method_id == MethodIDs.BASIC_PUBLISH:
                 print("message published started")
                 channel['state'] = _ChannelState.WAITING_HEADER
-                # TODO: we should store the class id
-                # so that we could check that the header method id
-                # are the same
+                channel['exchange'] = frame_value.properties['exchange-name']
+                channel['routing_key'] = frame_value.properties['exchange-name']
                 return
 
             if frame_value.method_id == MethodIDs.BASIC_CONSUME:
@@ -306,5 +307,7 @@ class TrackerProtocol(asyncio.protocols.Protocol):
             message.add_content(frame_value.content)
             if not message.is_complete():
                 return
+
+            # TODO callback message
 
             channel['state'] = _ChannelState.OPENED

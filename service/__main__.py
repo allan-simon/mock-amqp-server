@@ -6,6 +6,8 @@ import traceback
 import asyncio
 
 from .protocol import TrackerProtocol
+from .http_protocol import HTTPProtocol
+from .state import State
 
 
 def _exception_handler(loop, context):
@@ -17,21 +19,32 @@ def _exception_handler(loop, context):
         exception,
         exception.__traceback__,
     )
-    print(traceback_list)
+    for line in traceback_list:
+        print(line, end='')
 
 
 def _main():
+    global_state = State()
 
     loop = asyncio.get_event_loop()
     loop.set_exception_handler(_exception_handler)
 
     coroutine = loop.create_server(
         lambda: TrackerProtocol(
+            global_state,
         ),
         '0.0.0.0',
         '5672',
     )
+    http_coroutine = loop.create_server(
+        lambda: HTTPProtocol(
+            global_state,
+        ),
+        '0.0.0.0',
+        '8080',
+    )
     server = loop.run_until_complete(coroutine)
+    http_server = loop.run_until_complete(http_coroutine)
 
     try:
         loop.run_forever()
@@ -39,7 +52,9 @@ def _main():
         pass
 
     server.close()
+    http_server.close()
     loop.run_until_complete(server.wait_closed())
+    loop.run_until_complete(http_server.wait_closed())
 
     loop.close()
 

@@ -39,6 +39,7 @@ Vagrant.configure(2) do |config|
         echo 'cd /vagrant' >> /home/vagrant/.zshrc
         set +u; source /tmp/virtualenv/bin/activate; set -u
         pip install --upgrade pip
+        pip install h11
         chown -R vagrant:vagrant /tmp/virtualenv
 
         echo 'source /tmp/virtualenv/bin/activate' >> /home/vagrant/.zshrc
