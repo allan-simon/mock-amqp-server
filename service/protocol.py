@@ -9,6 +9,8 @@ from .sender import (
     send_connection_tune,
     send_connection_ok,
     send_heartbeat,
+    send_content_header,
+    send_content_body,
     send_channel_open_ok,
     send_channel_close_ok,
     send_exchange_declare_ok,
@@ -16,6 +18,7 @@ from .sender import (
     send_queue_bind_ok,
     send_basic_qos_ok,
     send_basic_consume_ok,
+    send_basic_deliver,
 )
 from .heartbeat import HeartBeat
 from .method import MethodIDs
@@ -234,28 +237,49 @@ class TrackerProtocol(asyncio.protocols.Protocol):
 
             if frame_value.method_id == MethodIDs.EXCHANGE_DECLARE:
                 # TODO add exchange declare callback
+
+                ok = self._global_state.declare_exchange(
+                    frame_value.properties['exchange-name'],
+                    frame_value.properties['type'],
+                )
+
+                if not ok:
+                    self.transport.close()
+
                 send_exchange_declare_ok(
                     self.transport,
                     channel_number,
                 )
+
                 print("exchange ok")
                 return
 
             if frame_value.method_id == MethodIDs.QUEUE_DECLARE:
-                # TODO add queue declare callback
-                # and get message_count / consumer_count
+                ok, message_count, consumer_count = self._global_state.declare_queue(
+                    frame_value.properties['queue-name'],
+                )
+                if not ok:
+                    self.transport.close()
+
                 send_queue_declare_ok(
                     self.transport,
                     channel_number,
                     frame_value.properties['queue-name'],
-                    message_count=0,
-                    consumer_count=0,
+                    message_count=message_count,
+                    consumer_count=consumer_count,
                 )
                 print("queue ok")
                 return
 
             if frame_value.method_id == MethodIDs.QUEUE_BIND:
                 # TODO add queue bind callback
+                ok = self._global_state.bind_queue(
+                    frame_value.properties['queue-name'],
+                    frame_value.properties['exchange-name'],
+                )
+                if not ok:
+                    self.transport.close()
+
                 send_queue_bind_ok(
                     self.transport,
                     channel_number,
@@ -281,7 +305,13 @@ class TrackerProtocol(asyncio.protocols.Protocol):
 
             if frame_value.method_id == MethodIDs.BASIC_CONSUME:
 
-                # TODO add basic qos callback
+                self._global_state.register_consumer(
+                    consumer=self,
+                    consumer_tag=frame_value.properties['consumer-tag'],
+                    queue_name=frame_value.properties['queue-name'],
+                    channel_number=channel_number,
+                )
+
                 send_basic_consume_ok(
                     self.transport,
                     channel_number,
@@ -289,7 +319,11 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 )
                 print("basic consume")
                 return
-
+            if frame_value.method_id == MethodIDs.BASIC_ACK:
+                self._global_state.message_ack(
+                    frame_value.properties['delivery-tag']
+                )
+                return
             return
 
         if channel['state'] == _ChannelState.WAITING_HEADER:
@@ -311,3 +345,33 @@ class TrackerProtocol(asyncio.protocols.Protocol):
             # TODO callback message
 
             channel['state'] = _ChannelState.OPENED
+
+    def push_message(
+        self,
+        message,
+        channel_number,
+        consumer_tag,
+        delivery_tag,
+        exchange_name,
+    ):
+        send_basic_deliver(
+            self.transport,
+            channel_number,
+            consumer_tag,
+            delivery_tag,
+            False,  # redelivered
+            exchange_name,
+            '', # routing key
+        )
+        send_content_header(
+            self.transport,
+            channel_number,
+            body_size=len(message),
+        )
+        send_content_body(
+            self.transport,
+            channel_number,
+            message,
+        )
+
+        print("sent")

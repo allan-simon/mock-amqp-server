@@ -1,5 +1,6 @@
 import asyncio
 from enum import IntEnum
+import json
 from wsgiref.handlers import format_date_time
 
 import h11
@@ -41,14 +42,34 @@ class HTTPProtocol(asyncio.protocols.Protocol):
                 self._state == _RequestState.WAITING_HEADERS and
                 isinstance(event, h11.Request)
             ):
-                method = event.method
-                if method == b'GET':
+                self._method = event.method
+                self._target = event.target
+                if self._method == b'GET':
                     self._on_get(event.target)
                     continue
-                if method == b'DELETE':
+                if self._method == b'DELETE':
                     self._on_delete(event.target)
                     continue
+                if self._method in [b'POST', b'PUT']:
+                    self._state = _RequestState.WAITING_BODY
 
+            if (
+                self._state == _RequestState.WAITING_BODY and
+                isinstance(event, h11.Data)
+            ):
+                if self._method == b'POST':
+                    self._on_post(self._target, event.data)
+                    continue
+
+                if self._method == b'PUT':
+                    self._on_put(self._target, event.data)
+                    continue
+
+            if isinstance(event, h11.EndOfMessage):
+                self._state = _RequestState.WAITING_HEADERS
+                self._method = None
+                self._target = None
+                continue
 
     def _on_get(self, target):
 
@@ -61,10 +82,39 @@ class HTTPProtocol(asyncio.protocols.Protocol):
             )
             future.add_done_callback(self._on_get_done)
             return
+        if target.startswith(b'/messages-acknowledged/'):
+            delivery_tag = target.split(b'/', maxsplit=2)[2]
+            future = asyncio.ensure_future(
+                self._global_state.wait_message_acknoledged(
+                    int(delivery_tag.decode('utf-8')),
+                )
+            )
+            future.add_done_callback(self._on_get_done)
+            return
 
         self._send_http_response_not_found()
 
+    def _on_post(self, target, data):
+        if target.startswith(b'/add-message-on/'):
+            exchange = target.split(b'/', maxsplit=2)[2]
+            message = json.loads(data.decode('utf-8'))
+            delivery_tag = self._global_state.publish_message(
+                exchange.decode('utf-8'),
+                message,
+            )
+            if delivery_tag is None:
+                self._send_http_response_not_found()
+                return
+            self._send_http_response_ok(
+                body=str(delivery_tag).encode('utf-8')
+            )
+            return
+        self._send_http_response_not_found()
+
     def _on_delete(self, target):
+        self._send_http_response_not_found()
+
+    def _on_put(self, target, data):
         self._send_http_response_not_found()
 
     def _on_get_done(self, future):
@@ -109,6 +159,12 @@ class HTTPProtocol(asyncio.protocols.Protocol):
         self._send_http_response_with_body(
             status_code=404,
             body=b"not found\n",
+        )
+
+    def _send_http_response_ok(self, body):
+        self._send_http_response_with_body(
+            status_code=404,
+            body=body + b'\n',
         )
 
     def _send_http_response_with_body(

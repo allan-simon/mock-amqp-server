@@ -366,3 +366,107 @@ def send_basic_consume_ok(
     transport.write(arguments)
 
     transport.write(_FRAME_END)
+
+def send_basic_deliver(
+    transport,
+    channel_number,
+    consumer_tag,
+    delivery_tag,
+    redelivered,
+    exchange_name,
+    routing_key,
+):
+
+    arguments = dumps(
+        format='sLbss',
+        values=[
+            consumer_tag,
+            delivery_tag,
+            redelivered,
+            exchange_name,
+            routing_key,
+        ]
+    )
+
+    transport.write(
+        bytearray(
+            [
+                1,  # method
+                # channel number, same as the one received
+                0, channel_number,
+            ]
+        )
+    )
+
+    # size of the frame
+    # class+method (4 bytes) + bytes len of arguments
+    transport.write(pack('>I', 4 + len(arguments) ))
+
+
+    transport.write(
+        bytearray([
+            0, 60,  # class basic (60)
+            0, 60,  # method deliver (21)
+        ])
+    )
+
+    transport.write(arguments)
+
+    transport.write(_FRAME_END)
+
+def send_content_header(
+    transport,
+    channel_number,
+    body_size,
+):
+
+    transport.write(
+        bytearray(
+            [
+                2,  # header
+                # channel number, same as the one received
+                0, channel_number,
+            ]
+        )
+    )
+
+    print(body_size)
+    arguments = dumps(
+        format='BBLB',
+        values=[
+            60,  # class basic
+            0,  # weight
+            body_size,
+            0,  # property flags
+        ]
+    )
+    print(arguments)
+
+    # size of the frame
+    transport.write(pack('>I', len(arguments)))
+    transport.write(arguments)
+
+    transport.write(_FRAME_END)
+
+
+def send_content_body(
+    transport,
+    channel_number,
+    body,
+):
+
+    transport.write(
+        bytearray(
+            [
+                3,  # body
+                # channel number, same as the one received
+                0, channel_number,
+            ]
+        )
+    )
+
+    # size of the frame
+    transport.write(pack('>I', len(body)))
+    transport.write(body)
+
+    transport.write(_FRAME_END)

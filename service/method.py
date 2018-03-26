@@ -15,6 +15,7 @@ class MethodIDs(IntEnum):
     BASIC_QOS = 0x003C000A
     BASIC_PUBLISH = 0x003C0028
     BASIC_CONSUME = 0x003C0014
+    BASIC_ACK = 0x003C0050
 
     EXCHANGE_DECLARE = 0x0028000A
 
@@ -244,7 +245,6 @@ def _decode_basic_consume(payload):
 
 def _decode_queue_declare(payload):
 
-    print(payload)
     values, _ = loads(
         'BsbbbbbF',
         payload,
@@ -263,7 +263,6 @@ def _decode_queue_declare(payload):
 
 def _decode_queue_bind(payload):
 
-    print(payload)
     values, _ = loads(
         'BsssbF',
         payload,
@@ -279,6 +278,19 @@ def _decode_queue_bind(payload):
     }
 
 
+def _decode_basic_ack(payload):
+
+    values, _ = loads(
+        'Lb',
+        payload,
+        offset=4,
+    )
+    return {
+        'delivery-tag': values[0],
+        'multiple': values[1],
+    }
+
+
 _ID_TO_METHOD = {
     0x000A000B: _decode_start_ok,
     0x000A001F: _decode_tune_ok,
@@ -290,6 +302,7 @@ _ID_TO_METHOD = {
     0x003C000A: _decode_basic_qos,
     0x003C0028: _decode_basic_publish,
     MethodIDs.BASIC_CONSUME: _decode_basic_consume,
+    MethodIDs.BASIC_ACK: _decode_basic_ack,
 
     0x0028000A: _decode_exchange_declare,
     MethodIDs.QUEUE_DECLARE: _decode_queue_declare,
