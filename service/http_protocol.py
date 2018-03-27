@@ -101,6 +101,17 @@ class HTTPProtocol(asyncio.protocols.Protocol):
             future.add_done_callback(self._on_get_done)
             return
 
+        if target.startswith(b'/queue-bound-to-exchange/'):
+            _, _, queue, exchange = target.split(b'/', maxsplit=3)
+            future = asyncio.ensure_future(
+                self._global_state.wait_queue_bound(
+                    queue.decode('utf-8'),
+                    exchange.decode('utf-8'),
+                )
+            )
+            future.add_done_callback(self._on_get_done)
+            return
+
         self._send_http_response_not_found()
 
     def _on_post(self, target, data):

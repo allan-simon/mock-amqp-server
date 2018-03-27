@@ -133,3 +133,18 @@ class State:
             await asyncio.sleep(1)
 
         raise WaitTimeout()
+
+    async def wait_queue_bound(self, queue, exchange, timeout=10):
+        for _ in range(timeout):
+
+            queues =  self._queues_bound_exhanges.get(
+                exchange,
+                set(),
+            )
+
+            if queue in queues:
+                return True
+
+            await asyncio.sleep(1)
+
+        raise WaitTimeout()
