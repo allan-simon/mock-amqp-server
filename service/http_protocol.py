@@ -32,6 +32,15 @@ class HTTPProtocol(asyncio.protocols.Protocol):
         self.transport = transport
 
     def data_received(self, data):
+
+        try:
+            self._data_received(data)
+        except Exception as e:
+            self._send_http_internal_server_error()
+            self.transport.close()
+            raise
+
+    def _data_received(self, data):
         self.http_parser.receive_data(data)
         print("http data")
 
@@ -138,6 +147,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
                     ("Date", format_date_time(None).encode("ascii")),
                     ("Server", b"whatever"),
                     ('Content-Length', b'0'),
+                    ('Connection', b'close'),
                 ],
             )
         )
@@ -179,6 +189,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
                     ("Date", format_date_time(None).encode("ascii")),
                     ("Server", b"whatever"),
                     ('Content-Length', str(len(body))),
+                    ('Connection', b'close'),
                 ],
             )
         )
@@ -187,3 +198,9 @@ class HTTPProtocol(asyncio.protocols.Protocol):
         )
         self.transport.write(data)
         self.transport.write(body_data)
+
+    def _send_http_internal_server_error(self):
+        self._send_http_response_with_body(
+            status_code=500,
+            body=b'internal server error\n',
+        )
