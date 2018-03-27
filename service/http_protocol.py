@@ -163,7 +163,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
 
     def _send_http_response_ok(self, body):
         self._send_http_response_with_body(
-            status_code=404,
+            status_code=200,
             body=body + b'\n',
         )
 
