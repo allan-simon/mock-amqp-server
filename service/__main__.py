@@ -2,12 +2,15 @@
 
 It also route message from/to tackers and the other services.
 """
+import os
 import traceback
 import asyncio
 
 from .protocol import TrackerProtocol
 from .http_protocol import HTTPProtocol
 from .state import State
+
+HTTP_PORT = os.environ.get('HTTP_PORT', '8080')
 
 
 def _exception_handler(loop, context):
@@ -41,7 +44,7 @@ def _main():
             global_state,
         ),
         '0.0.0.0',
-        '8080',
+        HTTP_PORT,
     )
     server = loop.run_until_complete(coroutine)
     http_server = loop.run_until_complete(http_coroutine)

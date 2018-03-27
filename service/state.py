@@ -1,7 +1,11 @@
+import os
 import asyncio
 from collections import deque
 from random import randint
 import json
+
+DEFAULT_USER = os.environ.get('DEFAULT_USER', 'guest')
+DEFAULT_PASSWORD = os.environ.get('DEFAULT_PASSWORD', 'guest')
 
 
 class WaitTimeout(Exception):
@@ -11,7 +15,7 @@ class WaitTimeout(Exception):
 class State:
     def __init__(self):
         self._users = {
-            'guest': 'guest',
+            DEFAULT_USER: DEFAULT_PASSWORD,
         }
         self._exchanges = {}
         self._queues = {}
