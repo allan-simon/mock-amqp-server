@@ -348,6 +348,7 @@ class TrackerProtocol(asyncio.protocols.Protocol):
 
     def push_message(
         self,
+        headers,
         message,
         channel_number,
         consumer_tag,
@@ -366,6 +367,7 @@ class TrackerProtocol(asyncio.protocols.Protocol):
         send_content_header(
             self.transport,
             channel_number,
+            headers,
             body_size=len(message),
         )
         send_content_body(

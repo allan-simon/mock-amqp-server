@@ -88,7 +88,8 @@ class State:
     def publish_message(
         self,
         exchange_name,
-        message
+        headers,
+        message_data,
     ):
         if exchange_name not in self._exchanges:
             return None
@@ -96,12 +97,12 @@ class State:
             exchange_name,
             set(),
         )
-        message_data = json.dumps(message).encode('utf-8')
         for queue_name in queues:
             consumers = self._queues[queue_name]['consumers']
             for consumer_tag, consumer in consumers.items():
                 delivery_tag = randint(1, 2**31)
                 consumer['transport'].push_message(
+                    headers,
                     message_data,
                     consumer['channel_number'],
                     consumer_tag,

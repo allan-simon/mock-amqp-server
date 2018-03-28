@@ -4,6 +4,24 @@ from .serialization import dumps
 
 _FRAME_END = b'\xce'
 
+PROPERTIES = [
+    ('content_type', 's', 1 << 15),
+    ('content_encoding', 's', 1 << 14),
+    ('application_headers', 'F', 1 << 13),
+    ('delivery_mode', 'B', 1 << 12),
+    ('priority', 'B', 1 << 11),
+    ('correlation_id', 's', 1 << 10),
+    ('reply_to', 's', 1 << 9),
+    ('expiration', 's', 1 << 8),
+    ('message_id', 's', 1 << 7),
+    ('timestamp', 'L', 1 << 6),
+    ('type', 's', 1 << 5),
+    ('user_id', 's', 1 << 4),
+    ('app_id', 's', 1 << 3),
+    ('cluster_id', 's', 1 << 2)
+]
+
+
 def send_heartbeat(transport):
 
     transport.write(
@@ -16,8 +34,9 @@ def send_heartbeat(transport):
         )
     )
     # size of the frame (0)
-    transport.write(pack('>I', 0 ))
+    transport.write(pack('>I', 0))
     transport.write(_FRAME_END)
+
 
 def send_connection_start(transport):
 
@@ -65,7 +84,7 @@ def send_connection_start(transport):
     )
     # size of the frame
     # class+method (4 bytes) + bytes len of arguments
-    transport.write(pack('>I', 4 + len(arguments) ))
+    transport.write(pack('>I', 4 + len(arguments)))
 
     transport.write(
         bytearray([
@@ -77,6 +96,7 @@ def send_connection_start(transport):
     transport.write(arguments)
     transport.write(_FRAME_END)
 
+
 def send_connection_tune(transport):
 
     arguments = dumps(
@@ -84,7 +104,7 @@ def send_connection_tune(transport):
         values=[
             0,  # channel max
             131072,  # frame max size
-            60,  # heartbeat
+            10,  # heartbeat
         ]
     )
 
@@ -98,7 +118,7 @@ def send_connection_tune(transport):
     )
     # size of the frame
     # class+method (4 bytes) + bytes len of arguments
-    transport.write(pack('>I', 4 + len(arguments) ))
+    transport.write(pack('>I', 4 + len(arguments)))
 
     transport.write(
         bytearray([
@@ -110,12 +130,13 @@ def send_connection_tune(transport):
     transport.write(arguments)
     transport.write(_FRAME_END)
 
+
 def send_connection_ok(transport):
 
     arguments = dumps(
         format='s',
         values=[
-            '' # known host
+            ''  # known host
         ]
     )
 
@@ -129,7 +150,7 @@ def send_connection_ok(transport):
     )
     # size of the frame
     # class+method (4 bytes) + bytes len of arguments
-    transport.write(pack('>I', 4 + len(arguments) ))
+    transport.write(pack('>I', 4 + len(arguments)))
 
     transport.write(
         bytearray([
@@ -166,7 +187,7 @@ def send_channel_open_ok(
     )
     # size of the frame
     # class+method (4 bytes) + bytes len of arguments
-    transport.write(pack('>I', 4 + len(arguments) ))
+    transport.write(pack('>I', 4 + len(arguments)))
 
     transport.write(
         bytearray([
@@ -177,6 +198,7 @@ def send_channel_open_ok(
 
     transport.write(arguments)
     transport.write(_FRAME_END)
+
 
 def send_channel_close_ok(
     transport,
@@ -205,6 +227,7 @@ def send_channel_close_ok(
 
     transport.write(_FRAME_END)
 
+
 def send_exchange_declare_ok(
     transport,
     channel_number,
@@ -231,6 +254,7 @@ def send_exchange_declare_ok(
     )
 
     transport.write(_FRAME_END)
+
 
 def send_queue_declare_ok(
     transport,
@@ -261,7 +285,7 @@ def send_queue_declare_ok(
 
     # size of the frame
     # class+method (4 bytes) + bytes len of arguments
-    transport.write(pack('>I', 4 + len(arguments) ))
+    transport.write(pack('>I', 4 + len(arguments)))
 
     transport.write(
         bytearray([
@@ -273,6 +297,7 @@ def send_queue_declare_ok(
     transport.write(arguments)
 
     transport.write(_FRAME_END)
+
 
 def send_queue_bind_ok(
     transport,
@@ -301,6 +326,7 @@ def send_queue_bind_ok(
 
     transport.write(_FRAME_END)
 
+
 def send_basic_qos_ok(
     transport,
     channel_number,
@@ -328,6 +354,7 @@ def send_basic_qos_ok(
 
     transport.write(_FRAME_END)
 
+
 def send_basic_consume_ok(
     transport,
     channel_number,
@@ -353,8 +380,7 @@ def send_basic_consume_ok(
 
     # size of the frame
     # class+method (4 bytes) + bytes len of arguments
-    transport.write(pack('>I', 4 + len(arguments) ))
-
+    transport.write(pack('>I', 4 + len(arguments)))
 
     transport.write(
         bytearray([
@@ -366,6 +392,7 @@ def send_basic_consume_ok(
     transport.write(arguments)
 
     transport.write(_FRAME_END)
+
 
 def send_basic_deliver(
     transport,
@@ -400,8 +427,7 @@ def send_basic_deliver(
 
     # size of the frame
     # class+method (4 bytes) + bytes len of arguments
-    transport.write(pack('>I', 4 + len(arguments) ))
-
+    transport.write(pack('>I', 4 + len(arguments)))
 
     transport.write(
         bytearray([
@@ -414,9 +440,11 @@ def send_basic_deliver(
 
     transport.write(_FRAME_END)
 
+
 def send_content_header(
     transport,
     channel_number,
+    properties,
     body_size,
 ):
 
@@ -430,15 +458,24 @@ def send_content_header(
         )
     )
 
-    print(body_size)
+    property_flags = 0
+    formats = ''
+    property_values = []
+    for name, format, bit in PROPERTIES:
+        if name not in properties:
+            continue
+        property_flags += bit
+        formats += format
+        property_values.append(properties[name])
+
     arguments = dumps(
-        format='BBLB',
+        format='BBLB' + formats,
         values=[
             60,  # class basic
             0,  # weight
             body_size,
-            0,  # property flags
-        ]
+            property_flags,
+        ] + property_values,
     )
     print(arguments)
 
@@ -470,3 +507,4 @@ def send_content_body(
     transport.write(body)
 
     transport.write(_FRAME_END)
+

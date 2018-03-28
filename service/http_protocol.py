@@ -117,10 +117,12 @@ class HTTPProtocol(asyncio.protocols.Protocol):
     def _on_post(self, target, data):
         if target.startswith(b'/add-message-on/'):
             exchange = target.split(b'/', maxsplit=2)[2]
-            message = json.loads(data.decode('utf-8'))
+            full_message = json.loads(data.decode('utf-8'))
+
             delivery_tag = self._global_state.publish_message(
                 exchange.decode('utf-8'),
-                message,
+                full_message['headers'],
+                full_message['body'].encode('utf-8'),
             )
             if delivery_tag is None:
                 self._send_http_response_not_found()
