@@ -85,6 +85,12 @@ class State:
         }
         return True
 
+    def delete_messages_of_queue(self, queue_name):
+        queue = self._queues.get(queue_name, None)
+        if queue is None:
+            return
+        queue['messages'] = deque()
+
     def get_messages_of_queue(self, queue_name):
         queue = self._queues.get(queue_name, None)
         if queue is None:

@@ -165,6 +165,14 @@ class HTTPProtocol(asyncio.protocols.Protocol):
         self._send_http_response_not_found()
 
     def _on_delete(self, target):
+        if target.startswith(b'/messages-in-queue/'):
+            queue_name = target.split(b'/', maxsplit=2)[2]
+            self._global_state.delete_messages_of_queue(
+                queue_name.decode('utf-8')
+            )
+            self._send_http_response_no_content()
+            return
+
         self._send_http_response_not_found()
 
     def _on_put(self, target, data):
