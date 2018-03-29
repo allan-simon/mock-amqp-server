@@ -1,10 +1,10 @@
 class Message():
-    def __init__(self, header):
-        self.header = header
+    def __init__(self, headers):
+        self.headers = headers
         self.content = b''
 
     def add_content(self, content):
         self.content += content
 
     def is_complete(self):
-        return self.header.body_size == len(self.content)
+        return self.headers.body_size == len(self.content)

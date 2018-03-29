@@ -85,12 +85,41 @@ class State:
         }
         return True
 
+    def get_messages_of_queue(self, queue_name):
+        queue = self._queues.get(queue_name, None)
+        if queue is None:
+            return None
+        return list(queue['messages'])
+
+    def store_message(
+        self,
+        exchange_name,
+        headers,
+        message_data,
+    ):
+        """Store message for inspection."""
+        if exchange_name not in self._exchanges:
+            return False
+        queues =  self._queues_bound_exhanges.get(
+            exchange_name,
+            set(),
+        )
+        for queue_name in queues:
+            self._queues[queue_name]['messages'].append(
+                {
+                    'headers': headers,
+                    'body': message_data.decode('utf-8'),
+                }
+            )
+        return True
+
     def publish_message(
         self,
         exchange_name,
         headers,
         message_data,
     ):
+        """Publish message to a worker without storing it."""
         if exchange_name not in self._exchanges:
             return None
         queues =  self._queues_bound_exhanges.get(

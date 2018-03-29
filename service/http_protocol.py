@@ -82,6 +82,9 @@ class HTTPProtocol(asyncio.protocols.Protocol):
 
     def _on_get(self, target):
 
+        ###
+        # Check if there was a succesfull authentication made by a client
+        ###
         if target.startswith(b'/authentification-done-with-success-on/'):
             username = target.split(b'/', maxsplit=2)[2]
             future = asyncio.ensure_future(
@@ -91,6 +94,11 @@ class HTTPProtocol(asyncio.protocols.Protocol):
             )
             future.add_done_callback(self._on_get_done)
             return
+
+        ###
+        # Wait for a message identified by a delivery_tag to be ack
+        # by the consumer or timeout
+        ###
         if target.startswith(b'/messages-acknowledged/'):
             delivery_tag = target.split(b'/', maxsplit=2)[2]
             future = asyncio.ensure_future(
@@ -101,6 +109,29 @@ class HTTPProtocol(asyncio.protocols.Protocol):
             future.add_done_callback(self._on_get_done)
             return
 
+        ###
+        # Inspect the content of a queue where the program we test
+        # publish messages.
+        # Does not wait.
+        ###
+        if target.startswith(b'/messages-in-queue/'):
+            queue_name = target.split(b'/', maxsplit=2)[2]
+            messages = self._global_state.get_messages_of_queue(
+                queue_name.decode('utf-8')
+            )
+            # queue not found
+            if messages is None:
+                self._send_http_response_not_found()
+                return
+            self._send_http_response_ok(
+                body=json.dumps(messages).encode('utf-8')
+            )
+            return
+
+        ###
+        # Wait until a given queue is bound to a given exchange
+        # or timeout
+        ###
         if target.startswith(b'/queue-bound-to-exchange/'):
             _, _, queue, exchange = target.split(b'/', maxsplit=3)
             future = asyncio.ensure_future(

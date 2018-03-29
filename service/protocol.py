@@ -279,6 +279,7 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 )
                 if not ok:
                     self.transport.close()
+                    return
 
                 send_queue_bind_ok(
                     self.transport,
@@ -330,7 +331,7 @@ class TrackerProtocol(asyncio.protocols.Protocol):
             if not frame_value.is_header:
                 return
 
-            channel['on_going_message'] = Message(header=frame_value)
+            channel['on_going_message'] = Message(headers=frame_value)
             channel['state'] = _ChannelState.WAITING_BODY
 
         if channel['state'] == _ChannelState.WAITING_BODY:
@@ -343,7 +344,16 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 return
 
             # TODO callback message
+            ok = self._global_state.store_message(
+                exchange_name=channel['exchange'],
+                headers=message.headers.properties,
+                message_data=message.content,
+            )
+            if not ok:
+                self.transport.close()
+                return
 
+            del channel['on_going_message']
             channel['state'] = _ChannelState.OPENED
 
     def push_message(
