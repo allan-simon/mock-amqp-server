@@ -110,12 +110,15 @@ def _read_item(
         offset += 4
         val = _bytes_to_str(buf[offset:offset + slen])
         offset += slen
+    # rabbitmq implement 's' not as short string
+    # see https://github.com/rabbitmq/rabbitmq-common/issues/261
     # 's': short string
-    elif ftype == 's':
-        slen, = unpack_from('>B', buf, offset)
-        offset += 1
-        val = _bytes_to_str(buf[offset:offset + slen])
-        offset += slen
+    # elif ftype == 's':
+    #     slen, = unpack_from('>B', buf, offset)
+    #     offset += 1
+
+    #     val = _bytes_to_str(buf[offset:offset + slen])
+    #     offset += slen
     # 'b': short-short int
     elif ftype == 'b':
         val, = unpack_from('>B', buf, offset)
@@ -124,8 +127,9 @@ def _read_item(
     elif ftype == 'B':
         val, = unpack_from('>b', buf, offset)
         offset += 1
+    # RabbitMQ impement 's' as short int
     # 'U': short int
-    elif ftype == 'U':
+    elif ftype in ['U', 's'] :
         val, = unpack_from('>h', buf, offset)
         offset += 2
     # 'u': short unsigned int
