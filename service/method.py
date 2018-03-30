@@ -8,6 +8,7 @@ class MethodIDs(IntEnum):
     TUNE_OK = 0x000A001F
     HEART_BEAT = 0x000A001F
     OPEN = 0x000A0028
+    CLOSE = 0x000A0032
 
     CHANNEL_OPEN = 0x0014000A
     CHANNEL_CLOSE = 0x00140028
@@ -152,6 +153,9 @@ def _decode_open(payload):
         'insist': values[2],
     }
 
+def _decode_close(payload):
+    return {
+    }
 
 def _decode_channel_open(payload):
     values, _ = loads(
@@ -295,6 +299,7 @@ _ID_TO_METHOD = {
     0x000A000B: _decode_start_ok,
     0x000A001F: _decode_tune_ok,
     0x000A0028: _decode_open,
+    MethodIDs.CLOSE: _decode_close,
 
     0x0014000A: _decode_channel_open,
     0x00140028: _decode_channel_close,

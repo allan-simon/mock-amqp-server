@@ -8,6 +8,7 @@ from .sender import (
     send_connection_start,
     send_connection_tune,
     send_connection_ok,
+    send_connection_close_ok,
     send_heartbeat,
     send_content_header,
     send_content_body,
@@ -117,6 +118,12 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 self._upsert_channel(frame_value.channel_number)
                 self._treat_channel_frame(frame_value)
                 continue
+
+            if frame_value.method_id == MethodIDs.CLOSE:
+                # TODO: clean the global state
+                send_connection_close_ok(self.transport)
+                self.transport.close()
+                return
 
             if self._parser_state == _ConnectionState.WAITING_START_OK:
                 correct_credentials = self._check_start_ok(frame_value)

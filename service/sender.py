@@ -96,6 +96,29 @@ def send_connection_start(transport):
     transport.write(arguments)
     transport.write(_FRAME_END)
 
+def send_connection_close_ok(transport):
+
+    transport.write(
+        bytearray(
+            [
+                1,  # method
+                0, 0,  # channel number 0
+            ]
+        )
+    )
+
+    # size of the frame
+    # class+method (4 bytes)
+    transport.write(pack('>I', 4))
+
+    transport.write(
+        bytearray([
+            0, 10,  # class connection (10)
+            0, 51,  # method close-ok (51)
+        ])
+    )
+    transport.write(_FRAME_END)
+
 
 def send_connection_tune(transport):
 
