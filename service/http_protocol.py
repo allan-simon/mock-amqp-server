@@ -129,6 +129,25 @@ class HTTPProtocol(asyncio.protocols.Protocol):
             return
 
         ###
+        # Inspect the content of a exchange where the program we test
+        # publish messages.
+        # Does not wait.
+        ###
+        if target.startswith(b'/messages-in-exchange/'):
+            exchange_name = target.split(b'/', maxsplit=2)[2]
+            messages = self._global_state.get_messages_of_exchange(
+                exchange_name.decode('utf-8')
+            )
+            # queue not found
+            if messages is None:
+                self._send_http_response_not_found()
+                return
+            self._send_http_response_ok(
+                body=json.dumps(messages).encode('utf-8')
+            )
+            return
+
+        ###
         # Wait until a given queue is bound to a given exchange
         # or timeout
         ###
