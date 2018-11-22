@@ -99,8 +99,8 @@ class State:
         return list(queue['messages'])
 
     def get_messages_of_exchange(self, exchange_name):
-        exchange = self._queues.get(exchange_name, None)
-        if exchange_name is None:
+        exchange = self._exchanges.get(exchange_name, None)
+        if exchange is None:
             return None
         return list(exchange['messages'])
 
