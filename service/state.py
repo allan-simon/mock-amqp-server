@@ -36,7 +36,7 @@ class State:
             print("****exchange", exchange_name, "type", exchange_type)
             self._exchanges[exchange_name] = {
                 'type': exchange_type,
-                'messages': [],
+                'messages': deque(),
             }
             return True
 
@@ -98,6 +98,12 @@ class State:
             return None
         return list(queue['messages'])
 
+    def delete_messages_of_exchange(self, exchange_name):
+        exchange = self._exchanges.get(exchange_name, None)
+        if exchange is None:
+            return
+        exchange['messages'] = deque()
+
     def get_messages_of_exchange(self, exchange_name):
         exchange = self._exchanges.get(exchange_name, None)
         if exchange is None:
@@ -139,6 +145,14 @@ class State:
         """Publish message to a worker without storing it."""
         if exchange_name not in self._exchanges:
             return None
+
+        message = {
+            'headers': headers,
+            'body': message_data.decode('utf-8'),
+        }
+
+        self._exchanges[exchange_name]['messages'].append(message)
+
         queues =  self._queues_bound_exhanges.get(
             exchange_name,
             set(),
@@ -166,7 +180,7 @@ class State:
         for _ in range(timeout):
             decoded_username = username.decode('utf-8')
             if decoded_username in self._authentication_tried_on:
-                return self._authentication_tried_on[decoded_username];
+                return self._authentication_tried_on[decoded_username]
 
             await asyncio.sleep(1)
 

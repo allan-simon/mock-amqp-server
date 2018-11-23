@@ -171,8 +171,8 @@ class TrackerProtocol(asyncio.protocols.Protocol):
             return False
 
         self._buffer = b''
-        return True
         print("sent")
+        return True
 
     def _check_start_ok(self, method):
         if method.properties['mechanism'] not in ["PLAIN", "AMQPLAIN"]:
@@ -191,9 +191,9 @@ class TrackerProtocol(asyncio.protocols.Protocol):
         accepted = self._global_state.check_credentials(
             username,
             password
-        );
+        )
 
-        return accepted;
+        return accepted
 
     def _check_open(self, method):
         # TODO: use callback to check user has access to vhost etc.

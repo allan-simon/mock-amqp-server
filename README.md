@@ -9,12 +9,12 @@ Addmitting  you have a worker you want to test, you spin this test infrastructur
 [ mock amqp server]<--- port 5672 --->[ your worker not instrumented]<----network-->[ database ]
         ^                                                                               ^   
         |                                                                               |
-    connection  on port 80                                                              |
+    connection on port 80                                                               |
         |                                                                               |
 [ test running on the side] -------------------------------------------------------------
  ````
 
-It permits you to have this in your CI tests  (in pseudo code
+It permits you to have this in your CI tests  (in pseudo code)
 
 ```python
 
@@ -22,8 +22,8 @@ def test_worker_insert_valid_message_in_database():
     database_connection = create_connection_to_database()
     backdoor_amqp = connection_to_amqp_backdoor()
     
-    back_door_amqp.insert_message(message_id=42, text="hello",in_queue="messages_to_treat")
-    back_door_amqp.wait_message_being_ack(message_id=42, timeout=5)
+    backdoor_amqp.insert_message(message_id=42, text="hello",in_queue="messages_to_treat")
+    backdoor_amqp.wait_message_being_ack(message_id=42, timeout=5)
     
     database_connection.assert_row_exists(id="42", content="hello") 
 
@@ -51,7 +51,6 @@ Ok, what about this one ?
 The day after while refactoring and switching the code configuration from `command-line arguments` to `environment variables` , the CPU was hitting 100%, no message being treated
 
 After some searching, it was a bug in the 3rd party library and my code, that was not handling the "wrong password" error correctly. Which was not found in CI because the mock library had not this problem.
- 
 
 ## Special thanks
 
