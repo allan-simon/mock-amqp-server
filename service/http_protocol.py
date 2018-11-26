@@ -138,7 +138,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
             messages = self._global_state.get_messages_of_exchange(
                 exchange_name.decode('utf-8')
             )
-            # queue not found
+            # exchange not found
             if messages is None:
                 self._send_http_response_not_found()
                 return
