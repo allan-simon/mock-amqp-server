@@ -181,6 +181,19 @@ class HTTPProtocol(asyncio.protocols.Protocol):
                 body=str(delivery_tag).encode('utf-8')
             )
             return
+
+        if target.startswith(b'/create-exchange/'):
+            exchange_name = target.split(b'/', maxsplit=3)[2]
+            exchange_type_ = target.split(b'/', maxsplit=3)[3]
+            self._global_state.declare_exchange(
+                exchange_name,
+                exchange_type,
+            )
+            self._send_http_response_ok(
+                body=b'ok',
+            )
+            return
+
         self._send_http_response_not_found()
 
     def _on_delete(self, target):
