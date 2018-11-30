@@ -186,8 +186,8 @@ class HTTPProtocol(asyncio.protocols.Protocol):
             exchange_name = target.split(b'/', maxsplit=3)[2]
             exchange_type = target.split(b'/', maxsplit=3)[3]
             self._global_state.declare_exchange(
-                exchange_name,
-                exchange_type,
+                exchange_name.decode('utf-8'),
+                exchange_type.decode('utf-8'),
             )
             self._send_http_response_ok(
                 body=b'ok',
