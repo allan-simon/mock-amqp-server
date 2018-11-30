@@ -184,7 +184,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
 
         if target.startswith(b'/create-exchange/'):
             exchange_name = target.split(b'/', maxsplit=3)[2]
-            exchange_type_ = target.split(b'/', maxsplit=3)[3]
+            exchange_type = target.split(b'/', maxsplit=3)[3]
             self._global_state.declare_exchange(
                 exchange_name,
                 exchange_type,
