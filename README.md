@@ -1,5 +1,7 @@
 # mock-amqp-server
 
+![](https://img.shields.io/docker/build/allansimon/mock-amqp-server.svg)
+
 Instrumented mock amqp (with some work to be RabbitMQ compatible) server to test your publisher/consumer at the network level
 
 ## What does this propose ?
