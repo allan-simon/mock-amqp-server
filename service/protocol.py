@@ -20,6 +20,7 @@ from .sender import (
     send_basic_qos_ok,
     send_basic_consume_ok,
     send_basic_deliver,
+    send_basic_cancel_ok,
 )
 from .heartbeat import HeartBeat
 from .method import MethodIDs
@@ -332,7 +333,14 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                     frame_value.properties['delivery-tag']
                 )
                 return
-            return
+
+            if frame_value.method_id == MethodIDs.BASIC_CANCEL:
+                send_basic_cancel_ok(
+                    self.transport,
+                    channel_number,
+                    frame_value.properties['consumer-tag']
+                )
+                return
 
         if channel['state'] == _ChannelState.WAITING_HEADER:
             if not frame_value.is_header:

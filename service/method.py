@@ -13,6 +13,7 @@ class MethodIDs(IntEnum):
     CHANNEL_OPEN = 0x0014000A
     CHANNEL_CLOSE = 0x00140028
 
+    BASIC_CANCEL = 0x003C001E
     BASIC_QOS = 0x003C000A
     BASIC_PUBLISH = 0x003C0028
     BASIC_CONSUME = 0x003C0014
@@ -295,6 +296,20 @@ def _decode_basic_ack(payload):
     }
 
 
+def _decode_basic_cancel(payload):
+
+    values, _ = loads(
+        'sb',
+        payload,
+        offset=4,
+    )
+
+    return {
+        'consumer-tag': values[0],
+        'no-wait': values[1],
+    }
+
+
 _ID_TO_METHOD = {
     0x000A000B: _decode_start_ok,
     0x000A001F: _decode_tune_ok,
@@ -308,6 +323,8 @@ _ID_TO_METHOD = {
     0x003C0028: _decode_basic_publish,
     MethodIDs.BASIC_CONSUME: _decode_basic_consume,
     MethodIDs.BASIC_ACK: _decode_basic_ack,
+
+    MethodIDs.BASIC_CANCEL: _decode_basic_cancel,
 
     0x0028000A: _decode_exchange_declare,
     MethodIDs.QUEUE_DECLARE: _decode_queue_declare,

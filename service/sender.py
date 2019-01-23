@@ -120,6 +120,44 @@ def send_connection_close_ok(transport):
     transport.write(_FRAME_END)
 
 
+def send_basic_cancel_ok(
+    transport,
+    channel_number,
+    consumer_tag,
+):
+
+    arguments = dumps(
+        format='s',
+        values=[
+            consumer_tag,
+        ]
+    )
+
+    transport.write(
+        bytearray(
+            [
+                1,  # method
+                # channel number, same as the one received
+                0, channel_number,
+            ]
+        )
+    )
+
+    # size of the frame
+    # class+method (4 bytes) + bytes len of arguments
+    transport.write(pack('>I', 4 + len(arguments)))
+
+    transport.write(
+        bytearray([
+            0, 60,  # class basic (60)
+            0, 31,  # method cancel-ok (31)
+        ])
+    )
+
+    transport.write(arguments)
+    transport.write(_FRAME_END)
+
+
 def send_connection_tune(transport):
 
     arguments = dumps(
