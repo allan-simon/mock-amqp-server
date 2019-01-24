@@ -42,7 +42,6 @@ class HTTPProtocol(asyncio.protocols.Protocol):
 
     def _data_received(self, data):
         self.http_parser.receive_data(data)
-        print("http data")
 
         event = None
         while event is not h11.NEED_DATA:
@@ -85,6 +84,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
         ###
         # Check if there was a succesfull authentication made by a client
         ###
+        print('GET ', target)
         if target.startswith(b'/authentification-done-with-success-on/'):
             username = target.split(b'/', maxsplit=2)[2]
             future = asyncio.ensure_future(
@@ -165,6 +165,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
         self._send_http_response_not_found()
 
     def _on_post(self, target, data):
+        print('POST ', target)
         if target.startswith(b'/add-message-on/'):
             exchange = target.split(b'/', maxsplit=2)[2]
             full_message = json.loads(data.decode('utf-8'))
@@ -197,6 +198,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
         self._send_http_response_not_found()
 
     def _on_delete(self, target):
+        print('DELETE ', target)
         if target.startswith(b'/messages-in-queue/'):
             queue_name = target.split(b'/', maxsplit=2)[2]
             self._global_state.delete_messages_of_queue(
@@ -208,6 +210,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
         self._send_http_response_not_found()
 
     def _on_put(self, target, data):
+        print('PUT ', target)
         self._send_http_response_not_found()
 
     def _on_get_done(self, future):

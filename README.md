@@ -54,6 +54,20 @@ The day after while refactoring and switching the code configuration from `comma
 
 After some searching, it was a bug in the 3rd party library and my code, that was not handling the "wrong password" error correctly. Which was not found in CI because the mock library had not this problem.
 
+## What are the HTTP call availables
+
+  * `DELETE /messages-in-queue/$QUEUE_NAME` purge messages of the given queue
+  * `DELETE /messages-in-exchange/$EXCHANGE_NAME` purge messages of the given exchanges
+
+  * `GET /authentification-done-with-success-on/$USERNAME` return if a client has successfully connected with the given username
+  * `GET /messages-acknowledged/$DELIVERY_TAG` this call will block until the given delivery tag was acknowledged as consumed by a worker, if the message has already been consumed before the call, the call directly returns. => this call is super pratical to write your integration tests (i.e to check if you worker has written a record in database after the message was consumed)
+  * `GET /messages-in-queue/$QUEUE_NAME` get all the messages waiting to be consumed in a given queue
+  * `GET /messages-in-exchange/$EXCHANGE_NAME` get all the messages waiting to be consumed in a given exchange
+  * `GET /queue-bound-to-exchange/$QUEUE_NAME/$EXCHANGE_NAME` wait until a given queue is bound to the given exchange
+
+  * `POST  /add-message-on/$EXCHANGE_NAME` simulate the publishing of a message on a given exchange, the body of the POST is a json with a `headers`  and `body` fields
+  * `POST /create-exchange/$EXCHANGE_NAME` simulate the creation of an exchange
+
 ## Special thanks
 
 For https://github.com/celery/py-amqp out of which I've extracted the type (de)serialization code
