@@ -212,6 +212,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
                 queue_name.decode('utf-8')
             )
             self._send_http_response_no_content()
+            return
 
         self._send_http_response_not_found()
 
