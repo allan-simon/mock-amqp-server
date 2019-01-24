@@ -206,6 +206,12 @@ class HTTPProtocol(asyncio.protocols.Protocol):
             )
             self._send_http_response_no_content()
             return
+        if target.startswith(b'/messages-in-exchange/'):
+            queue_name = target.split(b'/', maxsplit=2)[2]
+            self._global_state.delete_messages_of_exchange(
+                queue_name.decode('utf-8')
+            )
+            self._send_http_response_no_content()
 
         self._send_http_response_not_found()
 
