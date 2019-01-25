@@ -81,7 +81,7 @@ class State:
             return False
 
         self._queues[queue_name]['consumers'][consumer_tag] = {
-            'transport': consumer,
+            'protocol': consumer,
             'channel_number': channel_number,
         }
         return True
@@ -157,11 +157,26 @@ class State:
             exchange_name,
             set(),
         )
+
         for queue_name in queues:
             consumers = self._queues[queue_name]['consumers']
+
+            dead_consumers = []
+            delivery_tag = None
             for consumer_tag, consumer in consumers.items():
                 delivery_tag = randint(1, 2**31)
-                consumer['transport'].push_message(
+
+                # we clean dead connections, otherwise they will
+                # accumulate, and you will see some
+                # "socket.send() raised exception" in the logs see:
+                # https://github.com/allan-simon/mock-amqp-server/issues/5
+                if consumer['protocol'].transport.is_closing():
+                    # we can't delete them directly as we're iterating
+                    # over the dictionnary
+                    dead_consumers.append(consumer_tag)
+                    continue
+
+                consumer['protocol'].push_message(
                     headers,
                     message_data,
                     consumer['channel_number'],
@@ -169,9 +184,17 @@ class State:
                     delivery_tag,
                     exchange_name,
                 )
-                # TODO: support several delivery_tag
-                # if exchange is plugged to several queues
-                return delivery_tag
+                # a message is only sent to one consumer per queue
+                break
+
+            # we clean dead consumers' connection
+            for consumer_tag in dead_consumers:
+                print("dead consumer cleaned")
+                del consumers[consumer_tag]
+
+            # TODO: support several delivery_tag
+            # if exchange is plugged to several queues
+            return delivery_tag
 
     def message_ack(self, delivery_tag):
         self._message_acknowledged.add(delivery_tag)

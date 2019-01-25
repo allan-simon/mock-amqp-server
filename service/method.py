@@ -40,9 +40,9 @@ class Method():
         self.size = size
         self.method_id = method_id
 
-        print(hex(method_id))
+        print('Method id:', hex(method_id))
         decode_method = _ID_TO_METHOD[method_id]
-        print(decode_method.__name__)
+        print('Method name:', decode_method.__name__)
         self.properties = decode_method(payload)
 
 

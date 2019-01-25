@@ -106,8 +106,7 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 # no more complete frame available
                 # => wait for next data
                 return
-            print("frame")
-            print(frame_value)
+            print("frame:", frame_value)
             self._buffer = self._buffer[frame_value.size:]
 
             if isinstance(frame_value, HeartBeat):
