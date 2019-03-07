@@ -66,6 +66,7 @@ After some searching, it was a bug in the 3rd party library and my code, that wa
   * `GET /queue-bound-to-exchange/$QUEUE_NAME/$EXCHANGE_NAME` wait until a given queue is bound to the given exchange
 
   * `POST  /add-message-on/$EXCHANGE_NAME` simulate the publishing of a message on a given exchange, the body of the POST is a json with a `headers`  and `body` fields
+  * `POST  /add-message-in-queue/$QUEUE_NAME` simulate the publishing of a message on a given queue, the body of the POST is a json with a `headers`  and `body` fields
   * `POST /create-exchange/$EXCHANGE_NAME` simulate the creation of an exchange
 
 ## Special thanks

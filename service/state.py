@@ -136,6 +136,25 @@ class State:
 
         return True
 
+    def store_message_in_queue(
+        self,
+        queue_name,
+        headers,
+        message_data,
+    ):
+        """Store message for inspection."""
+        if queue_name not in self._queues:
+            return False
+
+        message = {
+            'headers': headers,
+            'body': message_data.decode('utf-8'),
+        }
+
+        self._queues[queue_name]['messages'].append(message)
+
+        return True
+
     def publish_message(
         self,
         exchange_name,
@@ -195,6 +214,58 @@ class State:
             # TODO: support several delivery_tag
             # if exchange is plugged to several queues
             return delivery_tag
+
+    def publish_message_in_queue(
+        self,
+        queue_name,
+        headers,
+        message_data,
+    ):
+        """Publish message to a worker without storing it."""
+        if queue_name not in self._queues:
+            return None
+
+        message = {
+            'headers': headers,
+            'body': message_data.decode('utf-8'),
+        }
+
+        self._queues[queue_name]['messages'].append(message)
+
+        consumers = self._queues[queue_name]['consumers']
+
+        dead_consumers = []
+        delivery_tag = None
+        for consumer_tag, consumer in consumers.items():
+            delivery_tag = randint(1, 2**31)
+
+            # we clean dead connections, otherwise they will
+            # accumulate, and you will see some
+            # "socket.send() raised exception" in the logs see:
+            # https://github.com/allan-simon/mock-amqp-server/issues/5
+            if consumer['protocol'].transport.is_closing():
+                # we can't delete them directly as we're iterating
+                # over the dictionary
+                dead_consumers.append(consumer_tag)
+                continue
+
+            consumer['protocol'].push_message(
+                headers,
+                message_data,
+                consumer['channel_number'],
+                consumer_tag,
+                delivery_tag,
+                'dummy-exchange',
+            )
+            # a message is only sent to one consumer per queue
+            break
+
+        # we clean dead consumers' connection
+        for consumer_tag in dead_consumers:
+            print("dead consumer cleaned")
+            del consumers[consumer_tag]
+
+        return delivery_tag
 
     def message_ack(self, delivery_tag):
         self._message_acknowledged.add(delivery_tag)
