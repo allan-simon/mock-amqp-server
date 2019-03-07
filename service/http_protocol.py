@@ -195,6 +195,16 @@ class HTTPProtocol(asyncio.protocols.Protocol):
             )
             return
 
+        if target.startswith(b'/create-queue/'):
+            queue_name = target.split(b'/', maxsplit=2)[2]
+            self._global_state.declare_queue(
+                queue_name.decode('utf-8'),
+            )
+            self._send_http_response_ok(
+                body=b'ok',
+            )
+            return
+
         self._send_http_response_not_found()
 
     def _on_delete(self, target):

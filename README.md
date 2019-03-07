@@ -67,6 +67,7 @@ After some searching, it was a bug in the 3rd party library and my code, that wa
 
   * `POST  /add-message-on/$EXCHANGE_NAME` simulate the publishing of a message on a given exchange, the body of the POST is a json with a `headers`  and `body` fields
   * `POST /create-exchange/$EXCHANGE_NAME` simulate the creation of an exchange
+  * `POST /create-queue/$QUEUE_NAME` simulate the creation of a queue
 
 ## Special thanks
 
