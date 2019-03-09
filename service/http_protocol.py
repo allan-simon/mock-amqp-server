@@ -183,6 +183,23 @@ class HTTPProtocol(asyncio.protocols.Protocol):
             )
             return
 
+        if target.startswith(b'/add-message-in-queue/'):
+            queue = target.split(b'/', maxsplit=2)[2]
+            full_message = json.loads(data.decode('utf-8'))
+
+            delivery_tag = self._global_state.publish_message_in_queue(
+                queue.decode('utf-8'),
+                full_message['headers'],
+                full_message['body'].encode('utf-8'),
+            )
+            if delivery_tag is None:
+                self._send_http_response_not_found()
+                return
+            self._send_http_response_ok(
+                body=str(delivery_tag).encode('utf-8')
+            )
+            return
+
         if target.startswith(b'/create-exchange/'):
             exchange_name = target.split(b'/', maxsplit=3)[2]
             exchange_type = target.split(b'/', maxsplit=3)[3]
