@@ -42,6 +42,7 @@ class _ConnectionState(IntEnum):
 
     WAITING_OTHER = 999
 
+
 class _ChannelState(IntEnum):
     WAITING_OPEN = 1
     OPENED = 2
@@ -159,7 +160,6 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 self._parser_state = _ConnectionState.OPENED
                 continue
 
-
     def _check_protocol_header(self):
         if len(self._buffer) < len(PROTOCOL_HEADER):
             # underflow
@@ -180,7 +180,7 @@ class TrackerProtocol(asyncio.protocols.Protocol):
 
         # TODO: use callback to check username/password correctness
         if method.properties['mechanism'] == "PLAIN":
-            _ , username, password = method.properties['response'].split('\x00', 3)
+            _, username, password = method.properties['response'].split('\x00', 3)
 
         if method.properties['mechanism'] == "AMQPLAIN":
             _, _, username, _, _, password = loads(
@@ -393,7 +393,7 @@ class TrackerProtocol(asyncio.protocols.Protocol):
             delivery_tag,
             False,  # redelivered
             exchange_name,
-            '', # routing key
+            '',  # routing key
         )
         send_content_header(
             self.transport,

@@ -60,6 +60,7 @@ from decimal import Decimal
 from io import BytesIO
 from struct import pack, unpack_from
 
+
 class FrameSyntaxError(Exception):
     def __init__(self, reply_text):
         Exception.__init__(
@@ -68,17 +69,20 @@ class FrameSyntaxError(Exception):
             reply_text,
         )
 
+
 def _str_to_bytes(s):
     """Convert str to bytes."""
     if isinstance(s, str):
         return s.encode('utf-8', 'surrogatepass')
     return s
 
+
 def _bytes_to_str(s):
     """Convert bytes to str."""
     if isinstance(s, bytes):
         return s.decode('utf-8', 'surrogatepass')
     return s
+
 
 ftype_t = chr if sys.version_info[0] == 3 else None
 
@@ -127,9 +131,9 @@ def _read_item(
     elif ftype == 'B':
         val, = unpack_from('>b', buf, offset)
         offset += 1
-    # RabbitMQ impement 's' as short int
+    # RabbitMQ implement 's' as short int
     # 'U': short int
-    elif ftype in ['U', 's'] :
+    elif ftype in ['U', 's']:
         val, = unpack_from('>h', buf, offset)
         offset += 2
     # 'u': short unsigned int
@@ -581,8 +585,7 @@ class GenericContent(object):
             return self.properties[name]
         raise AttributeError(name)
 
-    def _load_properties(self, class_id, buf, offset=0,
-                         classes=PROPERTY_CLASSES, unpack_from=unpack_from):
+    def _load_properties(self, class_id, buf, offset=0, classes=PROPERTY_CLASSES, unpack_from=unpack_from):
         """Load AMQP properties.
 
         Given the raw bytes containing the property-flags and property-list
@@ -652,8 +655,8 @@ class GenericContent(object):
         else:
             chunks.append(buf)
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     data = [
         0x00, 0x00, 0x01,
         0xc7, 0x0c, 0x63, 0x61, 0x70, 0x61, 0x62, 0x69,

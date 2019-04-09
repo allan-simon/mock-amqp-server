@@ -5,7 +5,7 @@ from .method import Body
 from .heartbeat import HeartBeat
 
 _FRAME_HEADER_SIZE = 7
-_FRAME_END_SIZE =  1
+_FRAME_END_SIZE = 1
 
 _FRAME_END = b'\xce'
 
@@ -13,6 +13,10 @@ _FRAME_METHOD = 1
 _FRAME_HEADER = 2
 _FRAME_BODY = 3
 _FRAME_HEARTBEAT = 8
+
+
+class InvalidFrameError(Exception):
+    pass
 
 
 def read_frame(data_in):
@@ -36,7 +40,7 @@ def read_frame(data_in):
 
     # The Frame termination chr is wrong
     if data_in[frame_size - 1:frame_size] != _FRAME_END:
-        raise exceptions.InvalidFrameError("Invalid FRAME_END marker")
+        raise InvalidFrameError("Invalid FRAME_END marker")
 
     # Get the raw frame data
     payload = data_in[_FRAME_HEADER_SIZE:frame_size - 1]
@@ -79,4 +83,3 @@ def read_frame(data_in):
         )
 
     print("frame type:", frame_type)
-

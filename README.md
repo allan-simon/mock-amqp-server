@@ -8,12 +8,12 @@ Instrumented mock amqp (with some work to be RabbitMQ compatible) server to test
 Addmitting  you have a worker you want to test, you spin this test infrastructure:
 
 ````
-[ mock amqp server]<--- port 5672 --->[ your worker not instrumented]<----network-->[ database ]
+[ mock amqp server ]<--- port 5672 --->[ your worker not instrumented ]<----network-->[ database ]
         ^                                                                               ^   
         |                                                                               |
     connection on port 80                                                               |
         |                                                                               |
-[ test running on the side] -------------------------------------------------------------
+[ test running on the side ]-------------------------------------------------------------
  ````
 
 It permits you to have this in your CI tests  (in pseudo code)
