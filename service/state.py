@@ -3,6 +3,8 @@ import asyncio
 from collections import deque
 from random import randint
 import json
+import base64
+import copy
 
 DEFAULT_USER = os.environ.get('DEFAULT_USER', 'guest')
 DEFAULT_PASSWORD = os.environ.get('DEFAULT_PASSWORD', 'guest')
@@ -98,7 +100,7 @@ class State:
         queue = self._queues.get(queue_name, None)
         if queue is None:
             return None
-        return list(queue['messages'])
+        return self.base64encode_message_in_list_when_appliable(list(queue['messages']))
 
     def delete_messages_of_exchange(self, exchange_name):
         exchange = self._exchanges.get(exchange_name, None)
@@ -110,7 +112,16 @@ class State:
         exchange = self._exchanges.get(exchange_name, None)
         if exchange is None:
             return None
-        return list(exchange['messages'])
+        return self.base64encode_message_in_list_when_appliable(list(exchange['messages']))
+
+    def base64encode_message_in_list_when_appliable(self, messages) -> list:
+        for i, message in enumerate(copy.deepcopy(messages)):
+            try:
+                message.update({'body': message['body'].decode('utf-8')})
+            except UnicodeDecodeError:
+                message.update({'body': base64.b64encode(message['body']).decode('utf-8'), 'base64': True})
+            messages[i] = message
+        return messages
 
     def store_message(
         self,
@@ -124,7 +135,7 @@ class State:
 
         message = {
             'headers': headers,
-            'body': message_data.decode('utf-8'),
+            'body': message_data,
         }
 
         self._exchanges[exchange_name]['messages'].append(message)
@@ -150,7 +161,7 @@ class State:
 
         message = {
             'headers': headers,
-            'body': message_data.decode('utf-8'),
+            'body': message_data,
         }
 
         self._queues[queue_name]['messages'].append(message)
@@ -162,6 +173,7 @@ class State:
         exchange_name,
         headers,
         message_data,
+        is_binary: bool = False,
     ):
         """Publish message to a worker without storing it."""
         if exchange_name not in self._exchanges:
@@ -169,7 +181,7 @@ class State:
 
         message = {
             'headers': headers,
-            'body': message_data.decode('utf-8'),
+            'body': message_data,
         }
 
         self._exchanges[exchange_name]['messages'].append(message)
@@ -199,7 +211,7 @@ class State:
 
                 consumer['protocol'].push_message(
                     headers,
-                    message_data,
+                    message_data.encode('utf8') if not is_binary else message_data,
                     consumer['channel_number'],
                     consumer_tag,
                     delivery_tag,
@@ -222,6 +234,7 @@ class State:
         queue_name,
         headers,
         message_data,
+        is_binary: bool = False,
     ):
         """Publish message to a worker without storing it."""
         if queue_name not in self._queues:
@@ -229,7 +242,7 @@ class State:
 
         message = {
             'headers': headers,
-            'body': message_data.decode('utf-8'),
+            'body': message_data,
         }
 
         self._queues[queue_name]['messages'].append(message)
@@ -253,7 +266,7 @@ class State:
 
             consumer['protocol'].push_message(
                 headers,
-                message_data,
+                message_data.encode('utf8') if not is_binary else message_data,
                 consumer['channel_number'],
                 consumer_tag,
                 delivery_tag,
