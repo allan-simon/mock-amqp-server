@@ -333,6 +333,13 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 )
                 return
 
+            if frame_value.method_id == MethodIDs.BASIC_NACK:
+                self._global_state.message_nack(
+                    frame_value.properties['delivery-tag'],
+                    frame_value.properties['requeue'],
+                )
+                return
+
             if frame_value.method_id == MethodIDs.BASIC_CANCEL:
                 send_basic_cancel_ok(
                     self.transport,

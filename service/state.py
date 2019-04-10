@@ -22,6 +22,8 @@ class State:
         self._queues_bound_exhanges = {}
         self._authentication_tried_on = {}
         self._message_acknowledged = set()
+        self._message_not_acknowledged = set()
+        self._message_requeued = set()
 
     def check_credentials(self, username, password):
         is_authentified = self._users.get(username, None) == password
@@ -270,6 +272,12 @@ class State:
     def message_ack(self, delivery_tag):
         self._message_acknowledged.add(delivery_tag)
 
+    def message_nack(self, delivery_tag, requeue: bool = False):
+        if requeue:
+            self._message_requeued.add(delivery_tag)
+        else:
+            self._message_not_acknowledged.add(delivery_tag)
+
     async def wait_authentication_performed_on(self, username, timeout=10):
         for _ in range(timeout):
             decoded_username = username.decode('utf-8')
@@ -283,6 +291,24 @@ class State:
     async def wait_message_acknoledged(self, delivery_tag, timeout=10):
         for _ in range(timeout):
             if delivery_tag  in self._message_acknowledged:
+                return True
+
+            await asyncio.sleep(1)
+
+        raise WaitTimeout()
+
+    async def wait_message_not_acknowledged(self, delivery_tag, timeout=10):
+        for _ in range(timeout):
+            if delivery_tag in self._message_not_acknowledged:
+                return True
+
+            await asyncio.sleep(1)
+
+        raise WaitTimeout()
+
+    async def wait_message_requeued(self, delivery_tag, timeout=10):
+        for _ in range(timeout):
+            if delivery_tag in self._message_requeued:
                 return True
 
             await asyncio.sleep(1)

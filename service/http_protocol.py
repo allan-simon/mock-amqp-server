@@ -110,6 +110,34 @@ class HTTPProtocol(asyncio.protocols.Protocol):
             return
 
         ###
+        # Wait for a message identified by a delivery_tag to be nack
+        # by the consumer or timeout
+        ###
+        if target.startswith(b'/messages-not-acknowledged/'):
+            delivery_tag = target.split(b'/', maxsplit=2)[2]
+            future = asyncio.ensure_future(
+                self._global_state.wait_message_not_acknowledged(
+                    int(delivery_tag.decode('utf-8')),
+                )
+            )
+            future.add_done_callback(self._on_get_done)
+            return
+
+        ###
+        # Wait for a message identified by a delivery_tag to be nack and requeued
+        # by the consumer or timeout
+        ###
+        if target.startswith(b'/messages-requeued/'):
+            delivery_tag = target.split(b'/', maxsplit=2)[2]
+            future = asyncio.ensure_future(
+                self._global_state.wait_message_requeued(
+                    int(delivery_tag.decode('utf-8')),
+                )
+            )
+            future.add_done_callback(self._on_get_done)
+            return
+
+        ###
         # Inspect the content of a queue where the program we test
         # publish messages.
         # Does not wait.
@@ -248,7 +276,6 @@ class HTTPProtocol(asyncio.protocols.Protocol):
         self._send_http_response_not_found()
 
     def _on_get_done(self, future):
-
         try:
             success = future.result()
             if not success:
