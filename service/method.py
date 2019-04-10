@@ -18,6 +18,7 @@ class MethodIDs(IntEnum):
     BASIC_PUBLISH = 0x003C0028
     BASIC_CONSUME = 0x003C0014
     BASIC_ACK = 0x003C0050
+    BASIC_NACK = 0x003C0078
 
     EXCHANGE_DECLARE = 0x0028000A
 
@@ -296,6 +297,19 @@ def _decode_basic_ack(payload):
     }
 
 
+def _decode_basic_nack(payload):
+    values, _ = loads(
+        'Lbb',
+        payload,
+        offset=4,
+    )
+    return {
+        'delivery-tag': values[0],
+        'multiple': values[1],
+        'requeue': values[2],
+    }
+
+
 def _decode_basic_cancel(payload):
 
     values, _ = loads(
@@ -323,6 +337,7 @@ _ID_TO_METHOD = {
     0x003C0028: _decode_basic_publish,
     MethodIDs.BASIC_CONSUME: _decode_basic_consume,
     MethodIDs.BASIC_ACK: _decode_basic_ack,
+    MethodIDs.BASIC_NACK: _decode_basic_nack,
 
     MethodIDs.BASIC_CANCEL: _decode_basic_cancel,
 
