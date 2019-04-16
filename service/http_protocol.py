@@ -27,6 +27,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
         self._state = _RequestState.WAITING_HEADERS
         self._method = None
         self._target = None
+        self._headers = None
 
     def connection_made(self, transport):
         """Handle new connection """
@@ -52,11 +53,12 @@ class HTTPProtocol(asyncio.protocols.Protocol):
             ):
                 self._method = event.method
                 self._target = event.target
+                self._headers = event.headers
                 if self._method == b'GET':
-                    self._on_get(event.target)
+                    self._on_get(event.target, self._headers)
                     continue
                 if self._method == b'DELETE':
-                    self._on_delete(event.target)
+                    self._on_delete(event.target, self._headers)
                     continue
                 if self._method in [b'POST', b'PUT']:
                     self._state = _RequestState.WAITING_BODY
@@ -66,20 +68,20 @@ class HTTPProtocol(asyncio.protocols.Protocol):
                 isinstance(event, h11.Data)
             ):
                 if self._method == b'POST':
-                    self._on_post(self._target, event.data)
+                    self._on_post(self._target, event.data, self._headers)
                     continue
-
                 if self._method == b'PUT':
-                    self._on_put(self._target, event.data)
+                    self._on_put(self._target, event.data, self._headers)
                     continue
 
             if isinstance(event, h11.EndOfMessage):
                 self._state = _RequestState.WAITING_HEADERS
                 self._method = None
                 self._target = None
+                self._headers = None
                 continue
 
-    def _on_get(self, target):
+    def _on_get(self, target, headers=None):
 
         ###
         # Check if there was a successful authentication made by a client
@@ -192,16 +194,32 @@ class HTTPProtocol(asyncio.protocols.Protocol):
 
         self._send_http_response_not_found()
 
-    def _on_post(self, target, data):
+    def _build_message(self, data, headers):
+        has_octet_stream = False
+        kept_headers = {}
+        for (type, value) in headers:
+            if type == b'content-type' and value == b'application/octet-stream':
+                has_octet_stream = True
+            elif type.startswith(b'amqp_header_'):
+                kept_headers[type.replace(b'amqp_header_', b'').decode('utf-8')] = value.decode('utf-8')
+        if has_octet_stream:
+            return {
+                'body': data,
+                'headers': kept_headers,
+                'binary': True,
+            }
+        return json.loads(data.decode('utf-8'))
+
+    def _on_post(self, target, data, headers=None):
         print('POST ', target)
         if target.startswith(b'/add-message-on/'):
             exchange = target.split(b'/', maxsplit=2)[2]
-            full_message = json.loads(data.decode('utf-8'))
-
+            full_message = self._build_message(data, headers)
             delivery_tag = self._global_state.publish_message(
                 exchange.decode('utf-8'),
                 full_message['headers'],
-                full_message['body'].encode('utf-8'),
+                full_message['body'],
+                'binary' in full_message and full_message['binary'],
             )
             if delivery_tag is None:
                 self._send_http_response_not_found()
@@ -213,12 +231,12 @@ class HTTPProtocol(asyncio.protocols.Protocol):
 
         if target.startswith(b'/add-message-in-queue/'):
             queue = target.split(b'/', maxsplit=2)[2]
-            full_message = json.loads(data.decode('utf-8'))
-
+            full_message = self._build_message(data, headers)
             delivery_tag = self._global_state.publish_message_in_queue(
                 queue.decode('utf-8'),
                 full_message['headers'],
-                full_message['body'].encode('utf-8'),
+                full_message['body'],
+                'binary' in full_message and full_message['binary'],
             )
             if delivery_tag is None:
                 self._send_http_response_not_found()
@@ -252,7 +270,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
 
         self._send_http_response_not_found()
 
-    def _on_delete(self, target):
+    def _on_delete(self, target, headers=None):
         print('DELETE ', target)
         if target.startswith(b'/messages-in-queue/'):
             queue_name = target.split(b'/', maxsplit=2)[2]
@@ -271,7 +289,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
 
         self._send_http_response_not_found()
 
-    def _on_put(self, target, data):
+    def _on_put(self, target, data, headers=None):
         print('PUT ', target)
         self._send_http_response_not_found()
 
