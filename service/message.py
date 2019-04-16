@@ -1,4 +1,4 @@
-class Message():
+class Message:
     def __init__(self, headers):
         self.headers = headers
         self.content = b''

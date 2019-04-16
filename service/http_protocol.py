@@ -7,9 +7,11 @@ import h11
 
 from .state import WaitTimeout
 
+
 class _RequestState(IntEnum):
     WAITING_HEADERS = 1
     WAITING_BODY = 2
+
 
 class HTTPProtocol(asyncio.protocols.Protocol):
     """Handle connection and bytes parsing."""
@@ -27,19 +29,17 @@ class HTTPProtocol(asyncio.protocols.Protocol):
         self._target = None
         self._headers = None
 
-
     def connection_made(self, transport):
         """Handle new connection """
         self.transport = transport
 
     def data_received(self, data):
-
         try:
             self._data_received(data)
         except Exception as e:
             self._send_http_internal_server_error()
             self.transport.close()
-            raise
+            raise e
 
     def _data_received(self, data):
         self.http_parser.receive_data(data)
@@ -84,7 +84,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
     def _on_get(self, target, headers=None):
 
         ###
-        # Check if there was a succesfull authentication made by a client
+        # Check if there was a successful authentication made by a client
         ###
         print('GET ', target)
         if target.startswith(b'/authentification-done-with-success-on/'):
@@ -104,7 +104,7 @@ class HTTPProtocol(asyncio.protocols.Protocol):
         if target.startswith(b'/messages-acknowledged/'):
             delivery_tag = target.split(b'/', maxsplit=2)[2]
             future = asyncio.ensure_future(
-                self._global_state.wait_message_acknoledged(
+                self._global_state.wait_message_acknowledged(
                     int(delivery_tag.decode('utf-8')),
                 )
             )

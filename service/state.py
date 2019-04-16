@@ -2,9 +2,7 @@ import os
 import asyncio
 from collections import deque
 from random import randint
-import json
-import base64
-import copy
+
 
 DEFAULT_USER = os.environ.get('DEFAULT_USER', 'guest')
 DEFAULT_PASSWORD = os.environ.get('DEFAULT_PASSWORD', 'guest')
@@ -21,19 +19,19 @@ class State:
         }
         self._exchanges = {}
         self._queues = {}
-        self._queues_bound_exhanges = {}
+        self._queues_bound_exchanges = {}
         self._authentication_tried_on = {}
         self._message_acknowledged = set()
         self._message_not_acknowledged = set()
         self._message_requeued = set()
 
     def check_credentials(self, username, password):
-        is_authentified = self._users.get(username, None) == password
+        is_authenticated = self._users.get(username, None) == password
 
         # we "log" it for instrumentation purpose
-        self._authentication_tried_on[username] = is_authentified
+        self._authentication_tried_on[username] = is_authenticated
 
-        return is_authentified
+        return is_authenticated
 
     def declare_exchange(self, exchange_name, exchange_type):
         if exchange_name not in self._exchanges:
@@ -67,11 +65,11 @@ class State:
         if queue not in self._queues:
             return False
 
-        if with_exchange in self._queues_bound_exhanges:
-            self._queues_bound_exhanges[with_exchange].add(queue)
+        if with_exchange in self._queues_bound_exchanges:
+            self._queues_bound_exchanges[with_exchange].add(queue)
             return True
 
-        self._queues_bound_exhanges[with_exchange] = {queue} # set()
+        self._queues_bound_exchanges[with_exchange] = {queue}  # set()
         return True
 
     def register_consumer(
@@ -140,7 +138,7 @@ class State:
 
         self._exchanges[exchange_name]['messages'].append(message)
 
-        queues =  self._queues_bound_exhanges.get(
+        queues = self._queues_bound_exchanges.get(
             exchange_name,
             set(),
         )
@@ -186,7 +184,7 @@ class State:
 
         self._exchanges[exchange_name]['messages'].append(message)
 
-        queues =  self._queues_bound_exhanges.get(
+        queues = self._queues_bound_exchanges.get(
             exchange_name,
             set(),
         )
@@ -205,7 +203,7 @@ class State:
                 # https://github.com/allan-simon/mock-amqp-server/issues/5
                 if consumer['protocol'].transport.is_closing():
                     # we can't delete them directly as we're iterating
-                    # over the dictionnary
+                    # over the dictionary
                     dead_consumers.append(consumer_tag)
                     continue
 
@@ -301,9 +299,9 @@ class State:
 
         raise WaitTimeout()
 
-    async def wait_message_acknoledged(self, delivery_tag, timeout=10):
+    async def wait_message_acknowledged(self, delivery_tag, timeout=10):
         for _ in range(timeout):
-            if delivery_tag  in self._message_acknowledged:
+            if delivery_tag in self._message_acknowledged:
                 return True
 
             await asyncio.sleep(1)
@@ -330,8 +328,7 @@ class State:
 
     async def wait_queue_bound(self, queue, exchange, timeout=10):
         for _ in range(timeout):
-
-            queues =  self._queues_bound_exhanges.get(
+            queues = self._queues_bound_exchanges.get(
                 exchange,
                 set(),
             )

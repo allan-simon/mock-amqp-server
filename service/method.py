@@ -1,5 +1,4 @@
 from enum import IntEnum
-from struct import unpack
 from .serialization import loads
 
 
@@ -26,8 +25,7 @@ class MethodIDs(IntEnum):
     QUEUE_BIND = 0x00320014
 
 
-class Method():
-
+class Method:
     def __init__(
         self,
         channel_number,
@@ -47,8 +45,7 @@ class Method():
         self.properties = decode_method(payload)
 
 
-class Header():
-
+class Header:
     PROPERTIES = [
         ('content_type', 's', 1 << 15),
         ('content_encoding', 's', 1 << 14),
@@ -99,7 +96,7 @@ class Header():
         self.properties = dict(zip(keys, values))
 
 
-class Body():
+class Body:
     def __init__(
         self,
         channel_number,
@@ -130,7 +127,6 @@ def _decode_start_ok(payload):
 
 
 def _decode_tune_ok(payload):
-
     values, _ = loads(
         'BlB',
         payload,
@@ -155,9 +151,11 @@ def _decode_open(payload):
         'insist': values[2],
     }
 
+
 def _decode_close(payload):
     return {
     }
+
 
 def _decode_channel_open(payload):
     values, _ = loads(
@@ -168,6 +166,7 @@ def _decode_channel_open(payload):
     return {
         'reserved-1': values[0],
     }
+
 
 def _decode_channel_close(payload):
     values, _ = loads(
@@ -184,7 +183,6 @@ def _decode_channel_close(payload):
 
 
 def _decode_basic_qos(payload):
-
     values, _ = loads(
         'lBb',
         payload,
@@ -197,8 +195,8 @@ def _decode_basic_qos(payload):
         'global': values[2],
     }
 
-def _decode_exchange_declare(payload):
 
+def _decode_exchange_declare(payload):
     values, _ = loads(
         'BssbbbbbF',
         payload,
@@ -216,8 +214,8 @@ def _decode_exchange_declare(payload):
         'arguments': values[7],
     }
 
-def _decode_basic_publish(payload):
 
+def _decode_basic_publish(payload):
     values, _ = loads(
         'Bssbb',
         payload,
@@ -231,8 +229,8 @@ def _decode_basic_publish(payload):
         'immediate': values[4],
     }
 
-def _decode_basic_consume(payload):
 
+def _decode_basic_consume(payload):
     values, _ = loads(
         'BssbbbbF',
         payload,
@@ -249,8 +247,8 @@ def _decode_basic_consume(payload):
         'arguments': values[7],
     }
 
-def _decode_queue_declare(payload):
 
+def _decode_queue_declare(payload):
     values, _ = loads(
         'BsbbbbbF',
         payload,
@@ -267,8 +265,8 @@ def _decode_queue_declare(payload):
         'arguments': values[7],
     }
 
-def _decode_queue_bind(payload):
 
+def _decode_queue_bind(payload):
     values, _ = loads(
         'BsssbF',
         payload,
@@ -285,7 +283,6 @@ def _decode_queue_bind(payload):
 
 
 def _decode_basic_ack(payload):
-
     values, _ = loads(
         'Lb',
         payload,
@@ -311,7 +308,6 @@ def _decode_basic_nack(payload):
 
 
 def _decode_basic_cancel(payload):
-
     values, _ = loads(
         'sb',
         payload,

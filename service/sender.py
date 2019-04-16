@@ -23,7 +23,6 @@ PROPERTIES = [
 
 
 def send_heartbeat(transport):
-
     transport.write(
         bytearray(
             [
@@ -39,7 +38,6 @@ def send_heartbeat(transport):
 
 
 def send_connection_start(transport):
-
     # dumped from the peer-properties sent by a RabbitMQ 3.7.4
     # server
     peer_properties = {
@@ -96,8 +94,8 @@ def send_connection_start(transport):
     transport.write(arguments)
     transport.write(_FRAME_END)
 
-def send_connection_close_ok(transport):
 
+def send_connection_close_ok(transport):
     transport.write(
         bytearray(
             [
@@ -125,7 +123,6 @@ def send_basic_cancel_ok(
     channel_number,
     consumer_tag,
 ):
-
     arguments = dumps(
         format='s',
         values=[
@@ -159,7 +156,6 @@ def send_basic_cancel_ok(
 
 
 def send_connection_tune(transport):
-
     arguments = dumps(
         format='BlB',
         values=[
@@ -193,7 +189,6 @@ def send_connection_tune(transport):
 
 
 def send_connection_ok(transport):
-
     arguments = dumps(
         format='s',
         values=[
@@ -229,7 +224,6 @@ def send_channel_open_ok(
     channel_number,
     channel_id,
 ):
-
     arguments = dumps(
         format='S',
         values=[
@@ -265,7 +259,6 @@ def send_channel_close_ok(
     transport,
     channel_number,
 ):
-
     transport.write(
         bytearray(
             [
@@ -293,7 +286,6 @@ def send_exchange_declare_ok(
     transport,
     channel_number,
 ):
-
     transport.write(
         bytearray(
             [
@@ -324,7 +316,6 @@ def send_queue_declare_ok(
     message_count,
     consumer_count,
 ):
-
     arguments = dumps(
         format='sll',
         values=[
@@ -364,7 +355,6 @@ def send_queue_bind_ok(
     transport,
     channel_number,
 ):
-
     transport.write(
         bytearray(
             [
@@ -392,7 +382,6 @@ def send_basic_qos_ok(
     transport,
     channel_number,
 ):
-
     transport.write(
         bytearray(
             [
@@ -421,7 +410,6 @@ def send_basic_consume_ok(
     channel_number,
     consumer_tag,
 ):
-
     arguments = dumps(
         format='s',
         values=[
@@ -464,7 +452,6 @@ def send_basic_deliver(
     exchange_name,
     routing_key,
 ):
-
     arguments = dumps(
         format='sLbss',
         values=[
@@ -508,7 +495,6 @@ def send_content_header(
     properties,
     body_size,
 ):
-
     transport.write(
         bytearray(
             [
@@ -552,7 +538,6 @@ def send_content_body(
     channel_number,
     body,
 ):
-
     transport.write(
         bytearray(
             [
@@ -568,4 +553,3 @@ def send_content_body(
     transport.write(body)
 
     transport.write(_FRAME_END)
-

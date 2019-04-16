@@ -10,7 +10,7 @@ from .protocol import TrackerProtocol
 from .http_protocol import HTTPProtocol
 from .state import State
 
-HTTP_PORT = os.environ.get('HTTP_PORT', '8080')
+HTTP_PORT = os.environ.get('HTTP_PORT', 8080)
 
 
 def _exception_handler(loop, context):
@@ -37,7 +37,7 @@ def _main():
             global_state,
         ),
         '0.0.0.0',
-        '5672',
+        5672,
     )
     http_coroutine = loop.create_server(
         lambda: HTTPProtocol(
