@@ -1,4 +1,5 @@
 import os
+import copy
 import asyncio
 from collections import deque
 from random import randint
