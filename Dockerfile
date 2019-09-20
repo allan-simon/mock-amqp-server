@@ -4,7 +4,8 @@ FROM jfloff/alpine-python:latest-slim
 COPY requirements.txt /requirements.txt
 COPY service/ /service
 
-# Setup SSH config and install requirements
+# waiting for https://github.com/jfloff/alpine-python/issues/6 to be fixed again
+RUN chmod +x /entrypoint.sh
 RUN /entrypoint.sh -P requirements.txt
 
 # Set the environment
