@@ -4,6 +4,13 @@
 
 Instrumented mock amqp (with some work to be RabbitMQ compatible) server to test your publisher/consumer at the network level
 
+## Tested with the following project/libraries
+
+  * pika
+  * celery
+  * Kombu
+  * haigha
+
 ## What does this propose?
 Admitting  you have a worker you want to test, you spin this test infrastructure:
 

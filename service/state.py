@@ -18,7 +18,13 @@ class State:
         self._users = {
             DEFAULT_USER: DEFAULT_PASSWORD,
         }
-        self._exchanges = {}
+        self._exchanges = {
+            # the anonymous default exchange is defined by AMQP 0.9.1
+            '': {
+                'type': 'direct',
+                'messages': deque(),
+            }
+        }
         self._queues = {}
         self._queues_bound_exchanges = {}
         self._authentication_tried_on = {}
@@ -36,7 +42,7 @@ class State:
 
     def declare_exchange(self, exchange_name, exchange_type):
         if exchange_name not in self._exchanges:
-            print("****exchange", exchange_name, "type", exchange_type)
+            print("[state] declared exchange:", exchange_name, " type:", exchange_type)
             self._exchanges[exchange_name] = {
                 'type': exchange_type,
                 'messages': deque(),
@@ -48,10 +54,14 @@ class State:
 
     def declare_queue(self, queue_name):
         if queue_name not in self._queues:
+            print("[state] new queue:", queue_name)
             self._queues[queue_name] = {
                 'messages': deque(),
                 'consumers': {},
             }
+            # AMQP 0.9.1 defines that by default all queues are bound to the default
+            # exchange
+            self.bind_queue(queue_name, with_exchange='')
 
         return (
             True,  # ok
@@ -66,6 +76,7 @@ class State:
         if queue not in self._queues:
             return False
 
+        print("[state] bound queue:", queue, " with_exchange:", with_exchange)
         if with_exchange in self._queues_bound_exchanges:
             self._queues_bound_exchanges[with_exchange].add(queue)
             return True
@@ -83,6 +94,7 @@ class State:
         if queue_name not in self._queues:
             return False
 
+        print("[state] consumer registered on queue:", queue_name)
         self._queues[queue_name]['consumers'][consumer_tag] = {
             'protocol': consumer,
             'channel_number': channel_number,
@@ -93,6 +105,7 @@ class State:
         queue = self._queues.get(queue_name, None)
         if queue is None:
             return
+        print("[state] messages of queue:", queue_name, " deleted")
         queue['messages'] = deque()
 
     def get_messages_of_queue(self, queue_name):
@@ -137,6 +150,7 @@ class State:
             'body': message_data,
         }
 
+        print("[state] store message in exchange:", exchange_name)
         self._exchanges[exchange_name]['messages'].append(message)
 
         queues = self._queues_bound_exchanges.get(
@@ -165,6 +179,7 @@ class State:
 
         self._queues[queue_name]['messages'].append(message)
 
+        print("[state] store message directly in queue:", queue_name)
         return True
 
     def publish_message(
@@ -178,6 +193,7 @@ class State:
         if exchange_name not in self._exchanges:
             return None
 
+        print("[state] publish message exchange_name:", exchange_name)
         message = {
             'headers': headers,
             'body': message_data,
@@ -239,6 +255,7 @@ class State:
         if queue_name not in self._queues:
             return None
 
+        print("[state] publish message directly in queue:", queue_name)
         message = {
             'headers': headers,
             'body': message_data,

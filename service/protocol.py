@@ -308,7 +308,7 @@ class TrackerProtocol(asyncio.protocols.Protocol):
                 print("message published started")
                 channel['state'] = _ChannelState.WAITING_HEADER
                 channel['exchange'] = frame_value.properties['exchange-name']
-                channel['routing_key'] = frame_value.properties['exchange-name']
+                channel['routing_key'] = frame_value.properties['routing-key']
                 return
 
             if frame_value.method_id == MethodIDs.BASIC_CONSUME:
