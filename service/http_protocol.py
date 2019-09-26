@@ -54,6 +54,11 @@ class HTTPProtocol(asyncio.protocols.Protocol):
                 self._method = event.method
                 self._target = event.target
                 self._headers = event.headers
+                if self._method == b'MOCK_FLUSH':
+                    self._global_state.reset()
+                    self._send_http_response_no_content()
+                    continue
+
                 if self._method == b'GET':
                     self._on_get(event.target, self._headers)
                     continue

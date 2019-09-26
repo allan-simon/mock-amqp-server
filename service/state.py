@@ -32,6 +32,24 @@ class State:
         self._message_not_acknowledged = set()
         self._message_requeued = set()
 
+    def reset(self):
+        self._users = {
+            DEFAULT_USER: DEFAULT_PASSWORD,
+        }
+        self._exchanges = {
+            # the anonymous default exchange is defined by AMQP 0.9.1
+            '': {
+                'type': 'direct',
+                'messages': deque(),
+            }
+        }
+        self._queues = {}
+        self._queues_bound_exchanges = {}
+        self._authentication_tried_on = {}
+        self._message_acknowledged = set()
+        self._message_not_acknowledged = set()
+        self._message_requeued = set()
+
     def check_credentials(self, username, password):
         is_authenticated = self._users.get(username, None) == password
 

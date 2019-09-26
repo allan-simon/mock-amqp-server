@@ -62,6 +62,7 @@ After some searching, it was a bug in the 3rd party library and my code, that wa
 
 ## What are the available HTTP calls
 
+  * `MOCK_FLUSH /` reset the mock internal state
   * `DELETE /messages-in-queue/$QUEUE_NAME` purge messages of the given queue
   * `DELETE /messages-in-exchange/$EXCHANGE_NAME` purge messages of the given exchanges
 
