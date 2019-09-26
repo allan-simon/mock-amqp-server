@@ -88,10 +88,23 @@ class HTTPProtocol(asyncio.protocols.Protocol):
 
     def _on_get(self, target, headers=None):
 
+
+        print('GET ', target)
+
+
+        ###
+        # debug view, when you don't know what you are looking for
+        ###
+        if target == b'/':
+            self._send_http_response_with_json_body(
+                status_code=200,
+                body=self._global_state.to_json().encode('utf-8')
+            )
+            return
+
         ###
         # Check if there was a successful authentication made by a client
         ###
-        print('GET ', target)
         if target.startswith(b'/authentification-done-with-success-on/'):
             username = target.split(b'/', maxsplit=2)[2]
             future = asyncio.ensure_future(
@@ -347,6 +360,31 @@ class HTTPProtocol(asyncio.protocols.Protocol):
             status_code=200,
             body=body + b'\n',
         )
+
+    def _send_http_response_with_json_body(
+        self,
+        status_code,
+        body,
+    ):
+        data = self.http_parser.send(
+            h11.Response(
+                status_code=status_code,
+                headers=[
+                    ("Date", format_date_time(None).encode("ascii")),
+                    ("Server", b"whatever"),
+                    ('Content-Length', str(len(body))),
+                    ('Content-Type', 'application/json'),
+                    ('Connection', b'close'),
+                ],
+            )
+        )
+        body_data = self.http_parser.send(
+            h11.Data(data=body)
+        )
+        self.transport.write(data)
+        self.transport.write(body_data)
+
+
 
     def _send_http_response_with_body(
         self,

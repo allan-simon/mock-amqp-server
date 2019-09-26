@@ -1,4 +1,5 @@
 import os
+import json
 import copy
 import asyncio
 from collections import deque
@@ -49,6 +50,29 @@ class State:
         self._message_acknowledged = set()
         self._message_not_acknowledged = set()
         self._message_requeued = set()
+
+
+    def to_json(self):
+
+
+        exchanges_dict = {
+            key: {
+                'type': value['type'],
+                'messages': list(value['messages']),
+            }
+            for key, value in self._exchanges.items()
+        }
+
+        return json.dumps({
+            'users': self._users,
+            'exchanges': exchanges_dict,
+            'queues': self._queues,
+            'queues_bound_exchanges': self._queues_bound_exchanges,
+            'authentication_tried_on': self._authentication_tried_on,
+            'messages_acknowledged': list(self._message_acknowledged),
+            'messages_not_acknowledged': list(self._message_not_acknowledged),
+            'messages_requeued': list(self._message_requeued),
+        })
 
     def check_credentials(self, username, password):
         is_authenticated = self._users.get(username, None) == password
